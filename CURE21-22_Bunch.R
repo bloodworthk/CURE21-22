@@ -126,3 +126,22 @@ Leaf_Data_Join <- Leaf_Data %>%
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) 
 
+#### BUNCH CODE #####
+
+Removed_Crab <- read.csv("removed_biomass.csv")
+
+
+
+#### REMOVE plants 185, 190, 193 (FALL) ####
+
+#Plants_New <- Leaf_Data_Join[- grep("185", Leaf_Data_Join$spring_plant_ID),]
+#Plants_New1 <- Plants_New[- grep("190", Plants_New$spring_plant_ID),]  
+# Plants_New2 <- Plants_New1[- grep("193", Plants_New1$spring_plant_ID),] 
+
+#Creates Leaf_Data_Join with removed plants
+
+#### FULL JOIN REMOVED CRAB WITH Plants_New2 data"
+
+Leaf_Data_Crab_Join <- Leaf_Data_Join %>% full_join(Removed_Crab)
+
+Leaf_Data_Crab_Join1 <- Leaf_Data_Crab_Join[-c(11387,11388,11389, 11390),]
