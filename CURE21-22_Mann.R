@@ -140,6 +140,8 @@ LeafNumEnd<-End_Time_Point %>%
   mutate(leafnumgroup=mean(leaf_num)) %>%
   ungroup()
 
-ggplot(data=LeafNumEnd, aes(x = leaf_num, y = overall_group)) +ggtitle("Average Leaf Number by Heatwave Treatment") + geom_boxplot(col=c("#999999", "#E69F00", "#56B4E9"), fill=c("#D55E00", "#0072B2", "#CC79A7"))
+ggplot(data=LeafNumEnd, aes(x = overall_group, y = leaf_num)) +ggtitle("Average Leaf Number by Heatwave Treatment") + geom_boxplot(col=c("#999999", "#E69F00", "#56B4E9"), fill=c("#D55E00","#0072B2", "#CC79A7"))
+
+
 
 
