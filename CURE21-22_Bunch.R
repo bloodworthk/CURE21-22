@@ -1,12 +1,13 @@
 #### Master Script for CURE 21-22 Manuscript ####
-#Rose Terry Script
+#Sarah Gora Script
 
 
 #### Load in packages ####
 library(githubinstall)
+#devtools::install_github("katiejolly/nationalparkcolors")
+library(nationalparkcolors)
 library(ggplot2)
 library(tidyverse)
-library(lme4)
 #set colorblind friendly color palette
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
@@ -44,15 +45,6 @@ ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = ""
 #read in end timepoint leaf metrics
 Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "factor", "factor", "numeric", "numeric", "numeric", "numeric")) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") 
-
-#read in data on pots that had biomass removed early season due to crabgrass invasion or incorrect species
-biomass_removed_early <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>% 
-  separate(fall_plant_ID, c("fall_day", "fall_treatment", "fall_plant"), sep = "_") %>% 
-  select(fall_plant, overall_group, biomass_removed)
-  
-#### Clean Up Biomass Removed Data ####
-biomass_removed_early$fall_plant <- gsub("p","P",biomass_removed_early$fall_plant)
-biomass_removed_early$fall_plant <- gsub(" P","P",biomass_removed_early$fall_plant)
 
 
 #### Clean Up Data Through Time Data ####
@@ -101,7 +93,7 @@ Through_Time_Join<-Through_Time_Fall %>%
   mutate(max_leaf_length=ifelse(survival=="D",NA,max_leaf_length)) %>% 
   mutate(max_plant_height=ifelse(survival=="D",NA,max_plant_height)) %>% 
   mutate(leaf_num=ifelse(survival=="D",NA,leaf_num))
-  
+
 
 Through_Time_Final<-Through_Time_Join %>% 
   select(c(overall_group,spring_plant_ID,fall_plant_ID,date,week_num,tray_ID,survival,max_leaf_length,max_plant_height,leaf_num,soil_moisture,light_avail,air_temp,humidity)) #### some things have NAs here -- look at data to find problem ####
@@ -116,7 +108,7 @@ End_Time_Point<-Through_Time_Join %>%
 
 #join ANPP_BNPP dataframe with plant
 NPP_Join <- PlantID %>%
-  select(-fall_day,-fall_treatment,-fall_pot_num) %>% # removing other fall ID, but keeping fall_plant ID to match up with biomass_removed_early IDs for later filtering out of crabgrass/sorgh pots
+  select(-fall_day,-fall_treatment,-fall_plant,-fall_pot_num) %>% 
   #join Plant data
   full_join(ANPP_BNPP) %>%
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
@@ -124,12 +116,7 @@ NPP_Join <- PlantID %>%
   rowwise() %>% 
   #total up the total NPP
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
-  select(overall_group,spring_plant_ID,fall_plant,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments,notes) %>%  #NAs -- not sure why?
-  full_join(biomass_removed_early)
-
-#replace NAs in biomass_removed_early with 0s
-NPP_Join$biomass_removed[is.na(NPP_Join$biomass_removed)] <- 0
-
+  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments,notes) #NAs -- not sure why?
 
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
@@ -139,35 +126,22 @@ Leaf_Data_Join <- Leaf_Data %>%
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) 
 
+#### BUNCH CODE #####
 
-#### Making new NPP dataframe that doesn't include pots that were invaded by crabgrass/Sorgh early season ####
-
-#vector of fall plants that had biomass removed early season
-invaded_fall_plants <- biomass_removed_early$fall_plant 
-
-# checking to see that all fall plants with early biomass removed are actually found in the NPP data frame
-length(invaded_fall_plants) == length(which(NPP_Join$fall_plant %in% invaded_fall_plants)) # TRUE, checks out
-
-#removing plants from NPP_Join that had biomass (e.g., crabgrass, Sorgh) removed early season
-NPP_InvadedRemoved <- NPP_Join[-which(NPP_Join$fall_plant %in% invaded_fall_plants), ] 
-
-#checking that the difference between length of list of plants in NPP_Join and NPP_InvadedRemoved is the same length as list of fall plants that had biomass removed
-length(NPP_InvadedRemoved$fall_plant) == length(NPP_Join$fall_plant) - length(invaded_fall_plants) # TRUE, checks out
+Removed_Crab <- read.csv("removed_biomass.csv")
 
 
-#### Total ANPP Stats ####
 
-## Running model 1: week 22, anova of total NPP by treatment, doesn't include pots that had invaders (crabgrass, Sorgh) early season
-aov_InvadedRemoved <- aov(data=NPP_InvadedRemoved, total_ANPP_g ~ overall_group)
-summary(aov_InvadedRemoved)
+#### REMOVE plants 185, 190, 193 (FALL) ####
 
-## Running model 2: week 22, all pots (includes pots that had crabgrass early season)
+#Plants_New <- Leaf_Data_Join[- grep("185", Leaf_Data_Join$spring_plant_ID),]
+#Plants_New1 <- Plants_New[- grep("190", Plants_New$spring_plant_ID),]  
+# Plants_New2 <- Plants_New1[- grep("193", Plants_New1$spring_plant_ID),] 
 
+#Creates Leaf_Data_Join with removed plants
 
-#lmer of total NPP by treatment, includes weight of invader biomass removed as random effect
-#lmer(NPP_Join$total_ANPP_g ~ NPP_Join$overall_group + (1|NPP_Join$biomass_removed))
+#### FULL JOIN REMOVED CRAB WITH Plants_New2 data"
 
-#aov of total NPP by treatment; doesn't account for early season invasion
+Leaf_Data_Crab_Join <- Leaf_Data_Join %>% full_join(Removed_Crab)
 
-
-#### Total ANPP Figure ####
+Leaf_Data_Crab_Join1 <- Leaf_Data_Crab_Join[-c(11387,11388,11389, 11390),]
