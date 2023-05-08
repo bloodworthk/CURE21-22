@@ -4,8 +4,10 @@
 
 #### Load in packages ####
 library(githubinstall)
+
 #devtools::install_github("katiejolly/nationalparkcolors")
 library(nationalparkcolors)
+install.packages("nationalparkcolors")
 library(ggplot2)
 library(tidyverse)
 #set colorblind friendly color palette
@@ -125,4 +127,19 @@ Leaf_Data_Join <- Leaf_Data %>%
   select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness) %>% 
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) 
+
+
+
+#Make dataframe for leaf number by week number and treatment
+LeafNumEnd<-End_Time_Point %>%
+  select(overall_group, spring_plant_ID, survival, leaf_num) %>%
+  filter(spring_plant_ID!="NA") %>%
+  filter(leaf_num!="NA") %>%
+  filter(overall_group!="NA") %>%
+  group_by(overall_group) %>%
+  mutate(leafnumgroup=mean(leaf_num)) %>%
+  ungroup()
+
+ggplot()
+
 
