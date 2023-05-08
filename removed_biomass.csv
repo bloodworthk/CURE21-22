@@ -1,0 +1,98 @@
+fall_plant_ID,sp_removed,biomass_removed,overall_group
+Tues_FC_P90,Sorg,0.12,Control-Control
+Mon_FC_P10,Sorg,0.14,Control-Heatwave
+Tues_FC_P85,Crab,0.14,Control-Control
+Mon_FC_P12,Sorg,0.14,Control-Heatwave
+Tues_FC_P77,Sorg,0.15,Control-Control
+Mon_FC_P11,Crab,0.16,Control-Heatwave
+Mon_FC_P30,Sorg,0.16,Control-Control
+Tues_FC_P65,Sorg,0.18,Control-Heatwave
+Tues_FC_P89,Crab,0.19,Control-Control
+Mon_FC_P7,Sorg,0.22,Control-Heatwave
+Wed_FC_136,Sorg,0.22,Control-Control
+Tues_FC_P76,Crab,0.25,Control-Heatwave
+Tues_FC_p64,Crab,0.31,Control-Control
+Mon_FC_P4,Crab,0.32,Control-Heatwave
+Thurs_FC_P198,Crab,0.34,Control-Control
+Thurs_FC_P199,Crab,0.35,Control-Heatwave
+Thurs_FC_P187,Crab,0.41,Control-Control
+Wed_FC_P126,Crab,0.46,Control-Heatwave
+Thurs_FC_P205,Sorg,0.53,Control-Control
+Thurs_FC_P181,Crab and Sorg,0.61,Control-Heatwave
+Thurs_FC_P184,Crab and Sorg,0.63,Control-Control
+Thurs_FC_p183,Crab,0.65,Control-Heatwave
+Thurs_FC_P207,Crab and Sorg,0.8,Control-Control
+Wed_FC_P123,Crab and Sorg,0.83,Control-Heatwave
+Wed_FC_P140,Crab,0.89,Control-Control
+Mon_FC_P9,Crab,1.04,Control-Heatwave
+Wed_FC_P139,Crab,1.16,Control-Control
+Thurs_FC_P192,Crab,1.31,Control-Heatwave
+Tues_FC_P71,Crab,1.32,Control-Control
+Mon_FC_P29,Crab,1.34,Control-Heatwave
+Tues_FC_P78,Crab and Sorg,1.44,Control-Control
+Tues_FC_P84,Crab,1.51,Control-Heatwave
+Tues_FH_P97,Crab,1.73,Heatwave-Control
+Wed_FC_P133,Crab,1.94,Control-Heatwave
+Wed_FC_P121,Crab,1.95,Control-Control
+Mon_FC_P8,Crab,2.02,Control-Heatwave
+Tues_FC_P63,Crab,2.02,Control-Control
+Tues_FC_P87,Crab and S. Nutans,2.14,Control-Heatwave
+Tues _ FH _ P105,Crab,2.31,Heatwave-Heatwave
+Mon_FC_P22,Crab,2.53,Control-Heatwave
+Tues_FC_P88,Crab,2.57,Control-Control
+Tues_FC_P61,Crab and Sorg,2.62,Control-Heatwave
+Tues_FC_P81,Crab,2.65,Control-Control
+Mon_FC_P16,Crab,2.68,Control-Heatwave
+Mon_FC_P5,Crab,2.77,Control-Control
+Mon_FC_P27,Crab,2.78,Control-Heatwave
+Tues_FC_P86,Crab and Sorg,2.8,Control-Control
+Mon_FC_P23,Crab,3.16,Control-Heatwave
+Mon_FH_P47,Sorg,0.07,Heatwave-Control
+Thurs_FH_P237,Sorg,0.11,Heatwave-Heatwave
+Tues_FH_P102,Crab,0.13,Heatwave-Control
+Tues_FH_P113,Sorg,0.21,Heatwave-Heatwave
+Thurs_FH_P219,Crab,0.21,Heatwave-Control
+Wed_FH_P165,Sorg,0.25,Heatwave-Heatwave
+Wed_FH_P153,Sorg,0.26,Heatwave-Control
+Tues_FH_P100,Crab,0.27,Heatwave-Heatwave
+Mon_FH_P54,Sorg,0.28,Heatwave-Control
+Thurs_FH_P222,Sorg,0.29,Heatwave-Heatwave
+Wed_FH_P167,Crab,0.29,Heatwave-Control
+Tues_FH_P106,Sorg.,0.31,Heatwave-Heatwave
+Tues_FH_P116,Sorg,0.35,Heatwave-Control
+Wed_FH_P152,Crab,0.36,Heatwave-Heatwave
+Thurs_FH_P238,Crab,0.36,Heatwave-Control
+Thurs_FC_P206,Sorg and Crab,0.41,Heatwave-Heatwave
+Wed_FH_P176,Crab,0.45,Heatwave-Control
+Tues_FH_P115,Crab and Unknown,0.45,Heatwave-Heatwave
+Mon_FH_P57,Sorg and Crab,0.46,Heatwave-Control
+Mon_FH_P45,Sorg. and Crab,0.5,Heatwave-Heatwave
+Wed_FH_P170,Crab,0.62,Heatwave-Control
+Thurs_FH_P221,Crab,0.63,Heatwave-Heatwave
+Thurs_FH_P234,Sorg and Crab,0.72,Heatwave-Control
+Tues_FH_P104,Crab and Sorg,0.74,Heatwave-Heatwave
+Tues_FH_P108,Crab,0.75,Heatwave-Control
+Thurs_FH_P225,Crab,0.81,Heatwave-Heatwave
+Wed_FH_P179,Crab,0.85,Heatwave-Control
+Wed_FH_P151,Crab,0.87,Heatwave-Heatwave
+Tues_FH_P117,Crab and Unknown,0.97,Heatwave-Control
+Thurs_FH_P232,Crab and Sorg,1.08,Heatwave-Heatwave
+Thurs_FH_p212,Crab,1.12,Heatwave-Control
+Tues_FH_P110,Crab,1.15,Heatwave-Heatwave
+Thurs_FH_P228,Crab,1.23,Heatwave-Control
+Tues_FH_P103,Crab and Sorg,1.27,Heatwave-Heatwave
+Tues_FH_P98,Crab,1.31,Heatwave-Control
+Mon_FH_P44,Crab,1.35,Heatwave-Heatwave
+Mon_FH_P55,Crab,1.38,Heatwave-Control
+Tues_FH_P118,Crab,1.49,Heatwave-Heatwave
+Wed_FH_P158,Crab and Sorg,1.54,Heatwave-Control
+Mon_FH_P53,Crab,1.71,Heatwave-Heatwave
+Mon_FH_P32,Crab and Sorg,1.76,Heatwave-Control
+Thurs_FH_P235,Crab,1.95,Heatwave-Heatwave
+Thurs_FH_P218,Crab,2.05,Heatwave-Control
+Thurs_FH_P215,Crab,2.24,Heatwave-Heatwave
+Mon_FH_P38,Crab,2.38,Heatwave-Control
+Tues_FH_P92,Crab,2.44,Heatwave-Heatwave
+Thurs_FH_P233,Crab,2.47,Heatwave-Control
+Tues_FH_P96,Crab,4.27,Heatwave-Heatwave
+,,,
