@@ -157,22 +157,34 @@ length(NPP_InvadedRemoved$fall_plant) == length(NPP_Join$fall_plant) - length(in
 
 #### Total ANPP Stats ####
 
-## Running model 1: week 22, anova of total NPP by treatment, doesn't include pots that had invaders (crabgrass, Sorgh) early season
-aov_InvadedRemoved <- aov(data=NPP_InvadedRemoved, total_ANPP_g ~ overall_group)
+## Running model 1: week 22, anova of total ANPP by treatment, doesn't include pots that had invaders (crabgrass, Sorgh) early season
+
+#new dataframe that excludes rows where overall_group or total_ANPP_g are NA
+NPP_NA_Removed <- NPP_InvadedRemoved[-which(is.na(NPP_InvadedRemoved$total_ANPP_g) | is.na(NPP_InvadedRemoved$overall_group)),]
+
+# checking to see how many observations were removed
+length(NPP_InvadedRemoved$overall_group) - length(NPP_NA_Removed$overall_group) #36
+
+#running anova of total ANPP by treatment; doesn't include invaded pots or observations that had NA for overall_group or total_ANPP_g
+aov_InvadedRemoved <- aov(data=NPP_NA_Removed, total_ANPP_g ~ overall_group)
 summary(aov_InvadedRemoved)
 
 ## Running model 2: week 22, all pots (includes pots that had crabgrass early season)
 
 #new dataframe that excludes rows where overall_group or total_ANPP_g are NA
 ANPP_NA_Removed <- NPP_Join[-which(is.na(NPP_Join$total_ANPP_g) | is.na(NPP_Join$overall_group)),]
-ANPP_NA_Removed <- ANPP_NA_Removed[-which(is.na(NPP_Join$overall_group)),]
 
 # checking to see how many observations were removed
-length(NPP_Join$overall_group) - length(ANPP_NA_Removed$overall_group)
+length(NPP_Join$overall_group) - length(ANPP_NA_Removed$overall_group) #49
 
 #lmer of total ANPP by treatment, includes weight of invader biomass removed as random effect
 lmer_allpots <- lmer(ANPP_NA_Removed$total_ANPP_g ~ ANPP_NA_Removed$overall_group + (1|ANPP_NA_Removed$biomass_removed)) # excludes total NAs for now while Kathryn looks at the underlying issue
 summary(lmer_allpots)
 
+# Comparing AIC scores for  model 1(anova) and model 2(lmer)
+AIC(aov_InvadedRemoved, lmer_allpots)
+
 
 #### Total ANPP Figures ####
+
+
