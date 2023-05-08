@@ -4,16 +4,13 @@
 
 #### Load in packages ####
 library(githubinstall)
-#devtools::install_github("katiejolly/nationalparkcolors")
-library(nationalparkcolors)
 library(ggplot2)
 library(tidyverse)
 #set colorblind friendly color palette
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 #### Set working directory ####
-#Bloodworth:mac
-setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
+setwd("C:/Users/alyou/Box/SIDE PROJECTS/CURE21-22/Data")
 
 #### Update ggplot2 theme ####
 #Update ggplot2 theme - make box around the x-axis title size 30, vertically justify x-axis title to 0.35, 
@@ -97,8 +94,9 @@ Through_Time_Join<-Through_Time_Fall %>%
   
 
 Through_Time_Final<-Through_Time_Join %>% 
-  select(c(overall_group,spring_plant_ID,fall_plant_ID,date,week_num,tray_ID,survival,max_leaf_length,max_plant_height,leaf_num,soil_moisture,light_avail,air_temp,humidity)) #### some things have NAs here -- look at data to find problem ####
-
+  select(c(overall_group,fall_plant_ID,spring_plant_ID,date,week_num,tray_ID,survival,
+           max_leaf_length,max_plant_height,leaf_num,soil_moisture,light_avail,
+           air_temp,humidity))#### some things have NAs here -- look at data to find problem ####
 #### Clean Up Week 22 Data ####
 
 End_Time_Point<-Through_Time_Join %>% 
@@ -127,3 +125,34 @@ Leaf_Data_Join <- Leaf_Data %>%
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) 
 
+#####################################################################
+# Relative Growth Rate - Leaf Number #
+Through_Time_Final2 <- Through_Time_Final %>%
+  drop_na(leaf_num) %>%
+  drop_na(overall_group) %>%
+  drop_na(week_num) %>%
+  group_by(overall_group, spring_plant_ID) %>%
+  unique() %>%
+  filter(spring_plant_ID != "Wed_SC_125" | leaf_num != 34) %>% #removing incorrectly entered columns
+  filter(spring_plant_ID != "Wed_SH_177" | leaf_num != 22) %>% #removing incorrectly entered columns
+  filter(spring_plant_ID != "Wed_SH_165" | max_plant_height != 79) #removing incorrectly entered columns
+
+# change incorrect leaf number value #
+Through_Time_Final2[1868,10]<-46
+
+# Week 1-2 slope #
+leafnum_week1 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "1") %>%
+  rename(leafnum_wk1 = leaf_num) %>%
+  rename(week_1 = week_num)
+leafnum_week2 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "2") %>%
+  rename(leafnum_wk2 = leaf_num) %>%
+  rename(week_2 = week_num)
+leafnum_week1_2 <- leafnum_week1 %>%
+  full_join(leafnum_week2) %>%
+  mutate(slope = (leafnum_wk2 - leafnum_wk1)/1)
+
+  
