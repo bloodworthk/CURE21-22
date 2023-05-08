@@ -15,6 +15,10 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 #Bloodworth:mac
 setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
 
+#Frost:mac
+setwd("~/Box Sync/llp_20212022")
+search()
+
 #### Update ggplot2 theme ####
 #Update ggplot2 theme - make box around the x-axis title size 30, vertically justify x-axis title to 0.35, 
 #Place a margin of 15 around the x-axis title.  
@@ -46,7 +50,10 @@ ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = ""
 #read in end timepoint leaf metrics
 Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "factor", "factor", "numeric", "numeric", "numeric", "numeric")) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") 
-  
+
+#read in removed biomass
+removed <- read.csv("removed_biomass.csv", header = TRUE) %>%
+  drop_na(biomass_removed)
 
 #### Clean Up Data Through Time Data ####
 
@@ -126,4 +133,77 @@ Leaf_Data_Join <- Leaf_Data %>%
   select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness) %>% 
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) 
+
+
+
+
+
+################################
+##### Morgan Frost - max plant height ######
+
+height <- Through_Time_Final %>%
+  full_join(removed) %>%  #joining with removed crab/sorg data
+  drop_na(max_plant_height) %>%  #remove na's from height
+  drop_na(overall_group) %>%  #remove na's from overall group
+  drop_na(week_num) %>%  #remove na's from week number
+  group_by(spring_plant_ID, week_num) %>%
+  unique() %>%  #removing duplicate data
+  filter(spring_plant_ID != "Wed_SH_165" | max_plant_height != "79") %>% #removing incorrectly entered extra columns
+  filter(spring_plant_ID != "Wed_SC_125" | leaf_num != "34") %>% #removing incorrectly entered extra columns
+  filter(spring_plant_ID != "Wed_SH_177" | leaf_num != "22") #removing incorrectly entered extra columns
+
+
+#Week 1-2 slope - LOTS of slopes look weird, not sure if it's worthwhile to look through data or just drop all outliers
+#NO dropped crab/sorg and NO other dropped pots that needed to be removed
+
+#manually subsetting just week 1
+height_week1 <- height %>%
+  dplyr::select(-c(fall_plant_ID, date, tray_ID, survival, max_leaf_length, leaf_num, soil_moisture, light_avail, air_temp, humidity, sp_removed, biomass_removed)) %>%
+  filter(week_num == "1") %>%
+  rename(height_wk1 = max_plant_height) %>%
+  rename(week_1 = week_num)
+
+#manually subsetting just week 2
+height_week2 <- height %>%
+  dplyr::select(-c(fall_plant_ID, date, tray_ID, survival, max_leaf_length, leaf_num, soil_moisture, light_avail, air_temp, humidity, sp_removed, biomass_removed)) %>%
+  filter(week_num == "2") %>%
+  rename(height_wk2 = max_plant_height) %>%
+  rename(week_2 = week_num)
+
+#joining then manually calculating slope
+height_week1_2 <- height_week1 %>%
+  full_join(height_week2) %>%
+  mutate(slope = (height_wk2 - height_wk1)/1)
+
+
+#Week 3-5 slope
+height_week3 <- height %>%
+  dplyr::select(-c(fall_plant_ID, date, tray_ID, survival, max_leaf_length, leaf_num, soil_moisture, light_avail, air_temp, humidity, sp_removed, biomass_removed)) %>%
+  filter(week_num == "3") %>%
+  rename(height_wk3 = max_plant_height) %>%
+  rename(week_3 = week_num)
+
+height_week5 <- height %>%
+  dplyr::select(-c(fall_plant_ID, date, tray_ID, survival, max_leaf_length, leaf_num, soil_moisture, light_avail, air_temp, humidity, sp_removed, biomass_removed)) %>%
+  filter(week_num == "5") %>%
+  rename(height_wk5 = max_plant_height) %>%
+  rename(week_5 = week_num)
+
+height_week3_5 <- height_week3 %>%
+  full_join(height_week5) %>%
+  mutate(slope = (height_wk5 - height_wk3)/2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

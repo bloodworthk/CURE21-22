@@ -98,13 +98,19 @@ Through_Time_Join<-Through_Time_Fall %>%
   
 
 Through_Time_Final<-Through_Time_Join %>% 
-  select(c(overall_group,spring_plant_ID,fall_plant_ID,date,week_num,tray_ID,survival,max_leaf_length,max_plant_height,leaf_num,soil_moisture,light_avail,air_temp,humidity)) #### some things have NAs here -- look at data to find problem ####
+  select(c(overall_group,spring_plant_ID,date,week_num,tray_ID,survival,max_leaf_length,max_plant_height,leaf_num,soil_moisture,light_avail,air_temp,humidity)) #### some things have NAs here -- look at data to find problem ####
 
 #### Clean Up Week 22 Data ####
 
 End_Time_Point<-Through_Time_Join %>% 
   filter(week_num=="22") %>% 
-  select(overall_group,spring_plant_ID,fall_plant_ID,date,week_num,tray_ID,survival,plant_stress,leaf_num) ###currently missing data #####
+  select(overall_group,spring_plant_ID,date,week_num,tray_ID,survival,plant_stress,leaf_num) %>%
+  replace_na(overall_group="Heatwave-Control")
+
+ETP<- replace_na(End_Time_Point$overall_group, "Heatwave-Control")
+ETPframe<-as.data.frame(ETP)
+
+###currently missing data #####
 
 #### Clean Up EndPoint Data ####
 
@@ -130,6 +136,9 @@ Leaf_Data_Join <- Leaf_Data %>%
 
 
 
+
+####Leaf Number####
+
 #Make dataframe for leaf number by week number and treatment
 LeafNumEnd<-End_Time_Point %>%
   select(overall_group, spring_plant_ID, survival, leaf_num) %>%
@@ -140,7 +149,58 @@ LeafNumEnd<-End_Time_Point %>%
   mutate(leafnumgroup=mean(leaf_num)) %>%
   ungroup()
 
-ggplot(data=LeafNumEnd, aes(x = overall_group, y = leaf_num)) +ggtitle("Average Leaf Number by Heatwave Treatment") + geom_boxplot(col=c("#999999", "#E69F00", "#56B4E9"), fill=c("#D55E00","#0072B2", "#CC79A7"))
+ggplot(data=LeafNumEnd, aes(x = overall_group, y = leaf_num)) +ggtitle("Average Leaf Number by Heatwave Treatment") + geom_boxplot(col=c("#000000", "#E69F00", "#56B4E9"), fill=c("#D55E00","#0072B2", "#CC79A7"))
+
+
+lmer(leaf_num~overall_group (1|crabgrass))
+
+aov(leaf_num~overall_group)
+
+aov(leaf_num~overall_group) #Excluding crabgrass
+
+#### Alive ANPP####
+
+
+#read in data on pots that had biomass removed early season due to crabgrass invasion or incorrect species
+biomass_removed_early <- read.csv("removed_biomass_update.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>%
+  separate(fall_plant_ID, c("fall_day", "fall_treatment", "fall_plant"), sep = "_") %>%
+  select(fall_plant, overall_group, biomass_removed)
+#### Clean Up Biomass Removed Data ####
+biomass_removed_early$fall_plant <- gsub("p","P",biomass_removed_early$fall_plant)
+biomass_removed_early$fall_plant <- gsub(" P","P",biomass_removed_early$fall_plant)
+
+# this uses "fall_plant" as the ID that you can match up to other dataframes, so it needs "fall_plant" to be included even though those aren't the final IDs
+
+Biomass<-full_join(NPP_Join, biomass_removed_early)
+
+LiveANPP<-Biomass%>%
+  select(-notes, -comments, -dead_ANPP_g, -BNPP_g) %>%
+  filter(spring_plant_ID!="NA") %>%
+  filter(alive_ANPP_g!="NA") %>%
+  group_by(overall_group) %>%
+  mutate(Live_treat=mean(alive_ANPP_g)) %>%
+  ungroup()
+
+
+#Alive ANPP boxplot
+ggplot(data=LiveANPP, aes(x = overall_group, y = alive_ANPP_g)) +ggtitle("Average Live Biomass by Heatwave Treatment") + geom_boxplot(col=c("#999999", "#E69F00", "#56B4E9", "#009E73"), fill=c("#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
+
+
+
+#### Dead ANPP ####
+
+DeadANPP <- Biomass %>%
+  select(-notes, -comments, -alive_ANPP_g, -BNPP_g) %>%
+  filter(spring_plant_ID!="NA") %>%
+  filter(dead_ANPP_g!="NA") %>%
+  group_by(overall_group) %>%
+  mutate(dead_treat=mean(dead_ANPP_g)) %>%
+  ungroup()
+
+
+#Dead ANPP boxplot
+ggplot(data=DeadANPP, aes(x = overall_group, y = dead_ANPP_g)) +ggtitle("Average Dead Biomass by Heatwave Treatment") + geom_boxplot(col=c("#000000", "#E69F00", "#56B4E9", "#009E73"), fill=c("#CC79A7","#0072B2", "#D55E00", "#F0E442"))
+
 
 
 
