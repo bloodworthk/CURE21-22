@@ -47,7 +47,8 @@ Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.s
 
 #read in data on pots that had biomass removed early season due to crabgrass invasion or incorrect species
 biomass_removed_early <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>% 
-  separate(fall_plant_ID, c("fall_day", "fall_treatment", "fall_plant"), sep = "_")
+  separate(fall_plant_ID, c("fall_day", "fall_treatment", "fall_plant"), sep = "_") %>% 
+  select(fall_plant, overall_group, biomass_removed)
   
 #### Clean Up Biomass Removed Data ####
 biomass_removed_early$fall_plant <- gsub("p","P",biomass_removed_early$fall_plant)
@@ -123,7 +124,12 @@ NPP_Join <- PlantID %>%
   rowwise() %>% 
   #total up the total NPP
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
-  select(overall_group,spring_plant_ID,fall_plant,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments,notes) #NAs -- not sure why?
+  select(overall_group,spring_plant_ID,fall_plant,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments,notes) %>%  #NAs -- not sure why?
+  full_join(biomass_removed_early)
+
+#replace NAs in biomass_removed_early with 0s
+NPP_Join$biomass_removed[is.na(NPP_Join$biomass_removed)] <- 0
+
 
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
@@ -149,16 +155,19 @@ NPP_InvadedRemoved <- NPP_Join[-which(NPP_Join$fall_plant %in% invaded_fall_plan
 length(NPP_InvadedRemoved$fall_plant) == length(NPP_Join$fall_plant) - length(invaded_fall_plants) # TRUE, checks out
 
 
-
 #### Total ANPP Stats ####
 
-## Running model 1: lmer; week 22, not including pots that had crabgrass early season
+## Running model 1: week 22, anova of total NPP by treatment, doesn't include pots that had invaders (crabgrass, Sorgh) early season
+aov_InvadedRemoved <- aov(data=NPP_InvadedRemoved, total_ANPP_g ~ overall_group)
+summary(aov_InvadedRemoved)
 
-#lmer(data=NPP_Join, total_ANPP_g ~ overall_group) #
+## Running model 2: week 22, all pots (includes pots that had crabgrass early season)
 
-## Running model 2: lmer; week 22, all pots (includes pots that had crabgrass early season)
 
-# lmer(NPP_Join$total_ANPP_g ~ NPP_Join$overall_group + (1|NPP_Join$biomass_removed))
+#lmer of total NPP by treatment, includes weight of invader biomass removed as random effect
+#lmer(NPP_Join$total_ANPP_g ~ NPP_Join$overall_group + (1|NPP_Join$biomass_removed))
+
+#aov of total NPP by treatment; doesn't account for early season invasion
 
 
 #### Total ANPP Figure ####
