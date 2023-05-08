@@ -167,13 +167,12 @@ summary(aov_InvadedRemoved)
 ANPP_NA_Removed <- NPP_Join[-which(is.na(NPP_Join$total_ANPP_g) | is.na(NPP_Join$overall_group)),]
 ANPP_NA_Removed <- ANPP_NA_Removed[-which(is.na(NPP_Join$overall_group)),]
 
+# checking to see how many observations were removed
 length(NPP_Join$overall_group) - length(ANPP_NA_Removed$overall_group)
 
 #lmer of total ANPP by treatment, includes weight of invader biomass removed as random effect
 lmer_allpots <- lmer(ANPP_NA_Removed$total_ANPP_g ~ ANPP_NA_Removed$overall_group + (1|ANPP_NA_Removed$biomass_removed)) # excludes total NAs for now while Kathryn looks at the underlying issue
 summary(lmer_allpots)
-
-#aov of total NPP by treatment; doesn't account for early season invasion
 
 
 #### Total ANPP Figures ####
