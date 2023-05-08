@@ -122,11 +122,24 @@ NPP_Join <- PlantID %>%
 Leaf_Data_Join <- Leaf_Data %>%
   full_join(PlantID) %>%
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness) %>% 
+  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness, fall_plant) %>% 
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) 
 
 #### BUNCH CODE #####
+
+
+# Code for bringing in and cleaning invaded pot biomass data:
+
+#read in data on pots that had biomass removed early season due to crabgrass invasion or incorrect species
+biomass_removed_early <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>%
+  separate(fall_plant_ID, c("fall_day", "fall_treatment", "fall_plant"), sep = "_") %>%
+  select(fall_plant, overall_group, biomass_removed)
+#### Clean Up Biomass Removed Data ####
+biomass_removed_early$fall_plant <- gsub("p","P",biomass_removed_early$fall_plant)
+biomass_removed_early$fall_plant <- gsub(" P","P",biomass_removed_early$fall_plant)
+
+# this uses "fall_plant" as the ID that you can match up to other dataframes, so it needs "fall_plant" to be included even though those aren't the final IDs
 
 Removed_Crab <- read.csv("removed_biomass.csv")
 
@@ -140,8 +153,82 @@ Removed_Crab <- read.csv("removed_biomass.csv")
 
 #Creates Leaf_Data_Join with removed plants
 
-#### FULL JOIN REMOVED CRAB WITH Plants_New2 data"
+#### FULL JOIN REMOVED BIOMASS DATA WITH Leaf_Data_Crab_Join data"
 
-Leaf_Data_Crab_Join <- Leaf_Data_Join %>% full_join(Removed_Crab)
+Leaf_Data_Crab_Join <- Leaf_Data_Join %>% full_join(biomass_removed_early) %>% filter(SLA!='NA')
 
-Leaf_Data_Crab_Join1 <- Leaf_Data_Crab_Join[-c(11387,11388,11389, 11390),]
+# Leaf_Data_Crab_Join1 <- Leaf_Data_Crab_Join[-c(11387,11388,11389, 11390),] #NA go bye bye
+
+Leaf_Data_Crab_Join$biomass_removed[is.na(Leaf_Data_Crab_Join$biomass_removed)] <- 0
+
+Leaf_Data_Crab_Join_RMVCrab <- na.omit(Leaf_Data_Crab_Join)
+
+
+#### STATS ####
+
+# run packages
+library(lme4)
+
+### DATA
+# Cleaned up, End time Point, Week 22
+View(Leaf_Data_Crab_Join_RMVCrab)
+
+### 4 TRAITS
+# SLA
+# LDMC
+# Leaf Thickness
+# Plant Stress (use count data, not averages)
+
+
+######## RUN 3 MODELS for each Trait
+### 1. lmer model: Week 22- allplants
+###           lmer(SLA ~ treatment + (1| crabgrass))
+### 2. lmer model: Week 22- allplants
+###           lmer(SLA ~ treatment)
+### 3. aov model: Week 22- allplants-remved crabbgrassa\
+###           aov(SLA ~ treatment + (1| crabgrass))
+
+
+######## RUN AIC Score
+### Pick model with lowest AIC score
+
+######## Make Boxplot
+
+
+ggplot(Leaf_Data_Crab_Join, aes(x = overall_group, y = SLA, fill= overall_group)) +
+  geom_boxplot() +
+  labs(
+    x = "Treatment",
+    y = "Specific Leaf Area") +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 40),
+        axis.text.y = element_text(size = 20),
+        axis.title.y = element_text(size = 40),
+        axis.ticks.y = element_line(size = 1)) +
+  guides(fill = FALSE)
+
+# run lmer 1
+mSLA1 <- lmer(SLA ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Crab_Join)
+summary(mSLA1)
+# mSLA1 <- summary(mSLA1)
+# capture.output(mSLA1, file = "Gora_CURE_Table1-GLMM.txt")
+
+# run lmer 2
+mSLA2 <- aov(SLA ~ overall_group, data = Leaf_Data_Crab_Join)
+summary(mSLA2)
+
+# run lmer 3- on data with plants with crabgrass removed
+mSLA3 <- aov(SLA ~ overall_group, data = Leaf_Data_Crab_Join_RMVCrab)
+summary(mSLA3)
+
+
+### run AIC
+AIC(mSLA1)
+AIC(mSLA2)
+AIC(mSLA3) #Best model
+
+
