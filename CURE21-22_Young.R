@@ -155,4 +155,85 @@ leafnum_week1_2 <- leafnum_week1 %>%
   full_join(leafnum_week2) %>%
   mutate(slope = (leafnum_wk2 - leafnum_wk1)/1)
 
+leafnum_W1_2 <- leafnum_week1_2 %>%
+  mutate(overall_group = ifelse(overall_group=="Control-Control", "Control", 
+              ifelse(overall_group=="Control-Heatwave", "Control",
+              ifelse(overall_group=="Heatwave-Control", "Heatwave",
+              ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W1-2") %>%
+  select(overall_group, spring_plant_ID, slope, timepoint)
+
   
+# Week 3-5 slope #
+leafnum_week3 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "3") %>%
+  rename(leafnum_wk3 = leaf_num) %>%
+  rename(week_3 = week_num)
+leafnum_week5 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "5") %>%
+  rename(leafnum_wk5 = leaf_num) %>%
+  rename(week_5 = week_num)
+leafnum_week3_5 <- leafnum_week3 %>%
+  full_join(leafnum_week5) %>%
+  mutate(slope = (leafnum_wk5 - leafnum_wk3)/2)
+
+
+leafnum_W3_5 <- leafnum_week3_5 %>%
+  mutate(overall_group = ifelse(overall_group=="Control-Control", "Control", 
+                        ifelse(overall_group=="Control-Heatwave", "Control",
+                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
+                       ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W3-5") %>%
+  select(overall_group, spring_plant_ID, slope, timepoint)
+
+
+# Week 9-18 slope #
+leafnum_week9 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "9") %>%
+  rename(leafnum_wk9 = leaf_num) %>%
+  rename(week_9 = week_num)
+leafnum_week18 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "18") %>%
+  rename(leafnum_wk18 = leaf_num) %>%
+  rename(week_18 = week_num)
+leafnum_W9_18 <- leafnum_week9 %>%
+  full_join(leafnum_week18) %>%
+  mutate(slope = (leafnum_wk18 - leafnum_wk9)/9) %>%
+  add_column(timepoint = "W9-18") %>%
+  select(overall_group, spring_plant_ID, slope, timepoint)
+
+
+
+# Week 19-22 slope #
+leafnum_week19 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "19") %>%
+  rename(leafnum_wk19 = leaf_num) %>%
+  rename(week_19 = week_num)
+leafnum_week22 <- Through_Time_Final2 %>%
+  dplyr::select(-c(date, tray_ID, survival, max_leaf_length, max_plant_height, soil_moisture, light_avail, air_temp, humidity)) %>%
+  filter(week_num == "22") %>%
+  rename(leafnum_wk22 = leaf_num) %>%
+  rename(week_22 = week_num)
+leafnum_W19_22 <- leafnum_week19 %>%
+  full_join(leafnum_week22) %>%
+  mutate(slope = (leafnum_wk22 - leafnum_wk19)/3) %>%
+  add_column(timepoint = "W19-22") %>%
+  select(overall_group, spring_plant_ID, slope, timepoint)
+
+
+# merge all data frames together #
+finalLeafNumSlope <- leafnum_W1_2 %>% 
+  rbind(leafnum_W3_5) %>%
+  rbind(leafnum_W9_18) %>%
+  rbind(leafnum_W19_22)
+  
+
+
+
+ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-5', 'W9-18', 'W19-22')),y=slope, fill=overall_group))+
+  geom_boxplot()
