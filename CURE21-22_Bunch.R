@@ -155,7 +155,7 @@ Removed_Crab <- read.csv("removed_biomass.csv")
 
 #### FULL JOIN REMOVED BIOMASS DATA WITH Leaf_Data_Crab_Join data"
 
-Leaf_Data_Crab_Join <- Leaf_Data_Join %>% full_join(biomass_removed_early) %>% filter(SLA!='NA')
+Leaf_Data_Crab_Join <- Leaf_Data_Join %>% full_join(biomass_removed_early) %>% filter(SLA!='NA') %>% filter(leaf_thickness!='NA') %>%  filter(dry_leaf_weight!='NA')
 
 # Leaf_Data_Crab_Join1 <- Leaf_Data_Crab_Join[-c(11387,11388,11389, 11390),] #NA go bye bye
 
@@ -194,12 +194,50 @@ View(Leaf_Data_Crab_Join_RMVCrab)
 
 ######## Make Boxplot
 
+#### SLA ####
 
 ggplot(Leaf_Data_Crab_Join, aes(x = overall_group, y = SLA, fill= overall_group)) +
   geom_boxplot() +
   labs(
     x = "Treatment",
     y = "Specific Leaf Area") +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 40),
+        axis.text.y = element_text(size = 20),
+        axis.title.y = element_text(size = 40),
+        axis.ticks.y = element_line(size = 1)) +
+  guides(fill = FALSE)
+
+
+#### Thickness ####
+
+ggplot(Leaf_Data_Crab_Join, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
+  geom_boxplot() +
+  labs(
+    x = "Treatment",
+    y = "Leaf Thickness") +
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 40),
+        axis.text.y = element_text(size = 20),
+        axis.title.y = element_text(size = 40),
+        axis.ticks.y = element_line(size = 1)) +
+  guides(fill = FALSE)
+
+#### Dry Leaf Weight ####
+
+ggplot(Leaf_Data_Crab_Join, aes(x = overall_group, y = LDMC, fill= overall_group)) +
+  geom_boxplot() +
+  labs(
+    x = "Treatment",
+    y = "LDMC") +
   theme_bw() +
   theme(panel.background = element_rect(fill = "white"),
         panel.grid.major = element_blank(), 
