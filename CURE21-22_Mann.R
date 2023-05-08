@@ -149,7 +149,13 @@ LeafNumEnd<-End_Time_Point %>%
   mutate(leafnumgroup=mean(leaf_num)) %>%
   ungroup()
 
+
+#Broken ggplot or data. Can only produce 3 of 4 treatments. Heat-Cont is missing entirely. If fixed, then week 22 is missing entirely. Not sure where the error comes in
+
 ggplot(data=LeafNumEnd, aes(x = overall_group, y = leaf_num)) +ggtitle("Average Leaf Number by Heatwave Treatment") + geom_boxplot(col=c("#000000", "#E69F00", "#56B4E9"), fill=c("#D55E00","#0072B2", "#CC79A7"))
+
+
+
 
 
 lmer(leaf_num~overall_group (1|crabgrass))
