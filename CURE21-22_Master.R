@@ -1,10 +1,8 @@
 #### Master Script for CURE 21-22 Manuscript ####
 
-#checking commit
+
 #### Load in packages ####
 library(githubinstall)
-#devtools::install_github("katiejolly/nationalparkcolors")
-library(nationalparkcolors)
 library(ggplot2)
 library(tidyverse)
 #set colorblind friendly color palette
@@ -32,11 +30,14 @@ theme_update(axis.title.x=element_text(size=50, vjust=-0.35, margin=margin(t=12)
 #read in plant ID meta-data
 PlantID <- read.csv("plant_IDs.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "factor", "character", "factor", "factor", "factor", "factor")) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
-  separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_")
+  separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
+  #remove fall P185, P190, P193 because they only contained crabgrass throughout experiment
+  filter(fall_plant!="P185" & fall_plant!="P190" & fall_plant!="P193")
+  
 
 #read in weekly data
-Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "factor", "factor", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
-  select(-fall_treatment,-spring_treatment)
+Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
+  select(-c(student_name,start_time,end_time))
 
 #read in end timepoint ANPP & BNPP Measurements 
 ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "numeric", "numeric", "numeric", "character")) %>% 
@@ -55,29 +56,30 @@ Through_Time$fall_plant_ID<-gsub("P00","P", Through_Time$fall_plant_ID)
 Through_Time$fall_plant_ID<-gsub("P0","P", Through_Time$fall_plant_ID)
 Through_Time$fall_plant_ID<-gsub("WEd","Wed", Through_Time$fall_plant_ID)
 Through_Time$fall_plant_ID<-gsub("-","_", Through_Time$fall_plant_ID)
+Through_Time$fall_plant_ID<-gsub("mon","Mon", Through_Time$fall_plant_ID)
 #spring plant ID column
 Through_Time$spring_plant_ID<-gsub(" - ","_", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("-","_", Through_Time$spring_plant_ID)
-Through_Time$spring_plant_ID<-gsub("MON","Mon", Through_Time$spring_plant_ID)
-Through_Time$spring_plant_ID<-gsub("Monn","Mon", Through_Time$spring_plant_ID)
-Through_Time$spring_plant_ID<-gsub("THUR","Thurs", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("Thu","Thurs", Through_Time$spring_plant_ID)
+Through_Time$spring_plant_ID<-gsub("THUR","Thurs", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("Thursrs","Thurs", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("Tue","Tues", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("Tuess","Tues", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("TUES","Tues", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub("TUE","Tues", Through_Time$spring_plant_ID)
-Through_Time$spring_plant_ID<-gsub("WED","Wed", Through_Time$spring_plant_ID)
 Through_Time$spring_plant_ID<-gsub(" ","", Through_Time$spring_plant_ID)
 
-#Make two dataframes for spring and fall and join PlantID
+#Make two dataframes for spring and fall and join PlantID to each then bind back togehter
 Through_Time_Fall<-Through_Time %>% 
   filter(fall_plant_ID!="NA") %>%
+  #remove plants that grew only crabgrass from all weeks
   select(-spring_plant_ID) %>% 
   separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
+  filter(fall_plant!="P185" & fall_plant!="P190" & fall_plant!="P193") %>% 
   full_join(PlantID) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  mutate(fall_plant_ID=paste(fall_day,fall_treatment,fall_plant,sep="_"))
+  mutate(fall_plant_ID=paste(fall_day,fall_treatment,fall_plant,sep="_")) %>% 
+  select(overall_group, week_num,fall_plant_ID,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity)
 
 Through_Time_Spring<-Through_Time %>% 
   filter(spring_plant_ID!="NA") %>% 
@@ -85,32 +87,25 @@ Through_Time_Spring<-Through_Time %>%
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
   full_join(PlantID) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  mutate(fall_plant_ID=paste(fall_day,fall_treatment,fall_plant,sep="_"))
+  mutate(fall_plant_ID=paste(fall_day,fall_treatment,fall_plant,sep="_")) %>% 
+  select(overall_group, week_num,fall_plant_ID,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity)
 
-#join Through_Time with PlantID
+#join fall and spring through time
 Through_Time_Join<-Through_Time_Fall %>% 
-  rbind(Through_Time_Spring) %>% 
-  mutate(max_leaf_length=ifelse(survival=="D",NA,max_leaf_length)) %>% 
-  mutate(max_plant_height=ifelse(survival=="D",NA,max_plant_height)) %>% 
-  mutate(leaf_num=ifelse(survival=="D",NA,leaf_num))
-  
-
-Through_Time_Final<-Through_Time_Join %>% 
-  select(c(overall_group,spring_plant_ID,fall_plant_ID,date,week_num,tray_ID,survival,max_leaf_length,max_plant_height,leaf_num,soil_moisture,light_avail,air_temp,humidity)) #### some things have NAs here -- look at data to find problem ####
-
-#### Clean Up Week 22 Data ####
-
-End_Time_Point<-Through_Time_Join %>% 
-  filter(week_num=="22") %>% 
-  select(overall_group,spring_plant_ID,fall_plant_ID,date,week_num,tray_ID,survival,plant_stress,leaf_num) ###currently missing data #####
+  rbind(Through_Time_Spring) 
 
 #### Clean Up EndPoint Data ####
 
+# Create Week 22 Data
+
+End_Time_Point <- Through_Time_Join %>% 
+  filter(week_num=="22") %>% 
+  select(-c(week_num,fall_plant_ID,soil_moisture,light_avail,air_temp,humidity))
+
 #join ANPP_BNPP dataframe with plant
-NPP_Join <- PlantID %>%
-  select(-fall_day,-fall_treatment,-fall_plant,-fall_pot_num) %>% 
+NPP_Join <- ANPP_BNPP %>%
   #join Plant data
-  full_join(ANPP_BNPP) %>%
+  full_join(PlantID) %>%
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   #compute mutate step row by row
   rowwise() %>% 
