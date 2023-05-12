@@ -10,8 +10,7 @@ library(multcomp)
 library(tidyverse)
 
 #### Set working directory ####
-#Bloodworth:mac
-setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
+setwd("~/Desktop/Cure_Project")
 
 #### Update ggplot2 theme ####
 #Update ggplot2 theme - make box around the x-axis title size 30, vertically justify x-axis title to 0.35, 
