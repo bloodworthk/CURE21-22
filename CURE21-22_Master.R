@@ -4,6 +4,7 @@
 #### Load in packages ####
 library(githubinstall)
 library(ggplot2)
+library(lmerTest)
 library(tidyverse)
 #set colorblind friendly color palette
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -119,6 +120,10 @@ End_Time_Point <- Through_Time_Join %>%
   filter(week_num=="22") %>% 
   select(-c(week_num,soil_moisture,light_avail,air_temp,humidity))
 
+#for models where plants with extra biomass are removed completely
+End_Time_Point_CGRemoval <- End_Time_Point %>% 
+  filter(!biomass_removed>0)
+
 #join ANPP_BNPP dataframe with plant
 NPP_Join <- ANPP_BNPP %>%
   #join Plant data
@@ -132,6 +137,10 @@ NPP_Join <- ANPP_BNPP %>%
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
   select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,biomass_removed,comments) 
 
+#for models where plants with extra biomass are removed completely
+NPP_Join_CGRemoval <- NPP_Join %>% 
+  filter(!biomass_removed>0)
+
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
   #remove plants with no leaf data
@@ -141,5 +150,191 @@ Leaf_Data_Join <- Leaf_Data %>%
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
   mutate(SLA = leaf_area / dry_leaf_weight) %>% 
-  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness,biomass_removed)
+  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness,SLA,LDMC,biomass_removed)
+
+#for models where plants with extra biomass are removed completely
+Leaf_Data_Join_CGRemoval <- Leaf_Data_Join %>% 
+  filter(!biomass_removed>0)
+
+#### Wk22 Max Leaf Length Graph ####
+
+#### Wk22 Max Leaf Length Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+MaxLL_model <- aov(max_leaf_length ~ overall_group, data = End_Time_Point)
+summary(MaxLL_model) #0.0766
+
+#run model not using any plants that had biomass removed
+MaxLL_model_noCG <- aov(max_leaf_length ~ overall_group, data = End_Time_Point_CGRemoval)
+summary(MaxLL_model_noCG) #p=0.0393
+
+# run model accounting for biomass removed
+MaxLL_model_biomass <- lmerTest::lmer(max_leaf_length ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
+anova(MaxLL_model_biomass) #p=0.07772
+
+#### Wk22 Max Plant Height Graph ####
+
+
+#### Wk22 Max Plant Height Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+MaxPH_model <- aov(max_plant_height ~ overall_group, data = End_Time_Point)
+summary(MaxPH_model) #0.00117
+
+#run model not using any plants that had biomass removed
+MaxPH_model_noCG <- aov(max_plant_height ~ overall_group, data = End_Time_Point_CGRemoval)
+summary(MaxPH_model_noCG) #p=0.0131
+
+# run model accounting for biomass removed
+MaxPH_model_biomass <- lmerTest::lmer(max_plant_height ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
+anova(MaxPH_model_biomass) #p=0.001194
+
+#### Wk22 Leaf Number Graph ####
+
+
+#### Wk22 Leaf Number Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+leaf_num_model <- aov(leaf_num ~ overall_group, data = End_Time_Point)
+summary(leaf_num_model) #2.27e-06
+
+#run model not using any plants that had biomass removed
+leaf_num_model_noCG <- aov(leaf_num ~ overall_group, data = End_Time_Point_CGRemoval)
+summary(leaf_num_model_noCG) #p=2.48e-09
+
+# run model accounting for biomass removed
+leaf_num_model_biomass <- lmerTest::lmer(leaf_num ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
+anova(leaf_num_model_biomass) #p=9.287e-10
+
+#### Alive ANPP Graph ####
+
+#### Alive ANPP Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+alive_ANPP_model <- aov(alive_ANPP_g ~ overall_group, data = NPP_Join)
+summary(alive_ANPP_model) #0.000334
+
+#run model not using any plants that had biomass removed
+alive_ANPP_model_noCG <- aov(alive_ANPP_g~ overall_group, data = NPP_Join_CGRemoval)
+summary(alive_ANPP_model_noCG) #0.00767
+
+# run model accounting for biomass removed
+alive_ANPP_model_biomass <- lmerTest::lmer(alive_ANPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
+anova(alive_ANPP_model_biomass) #0.0003199
+
+### Dead ANPP Graph ####
+
+#### Dead ANPP Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+dead_ANPP_model <- aov(dead_ANPP_g ~ overall_group, data = NPP_Join)
+summary(dead_ANPP_model) #0.0492
+
+#run model not using any plants that had biomass removed
+dead_ANPP_model_noCG <- aov(dead_ANPP_g~ overall_group, data = NPP_Join_CGRemoval)
+summary(dead_ANPP_model_noCG) #0.0271
+
+# run model accounting for biomass removed
+dead_ANPP_model_biomass <- lmerTest::lmer(dead_ANPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
+anova(dead_ANPP_model_biomass) #0.01366
+
+### Total ANPP Graph ####
+
+#### Total ANPP Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+total_ANPP_model <- aov(total_ANPP_g ~ overall_group, data = NPP_Join)
+summary(total_ANPP_model) #0.0929
+
+#run model not using any plants that had biomass removed
+total_ANPP_model_noCG <- aov(total_ANPP_g~ overall_group, data = NPP_Join_CGRemoval)
+summary(total_ANPP_model_noCG) #0.051
+
+# run model accounting for biomass removed
+total_ANPP_model_biomass <- lmerTest::lmer(total_ANPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
+anova(total_ANPP_model_biomass) #0.05528
+
+### BNPP Graph ####
+
+#### BNPP Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+BNPP_model <- aov(BNPP_g ~ overall_group, data = NPP_Join)
+summary(BNPP_model) #0.00897
+
+#run model not using any plants that had biomass removed
+BNPP_model_noCG <- aov(BNPP_g~ overall_group, data = NPP_Join_CGRemoval)
+summary(BNPP_model_noCG) #0.0119
+
+# run model accounting for biomass removed
+BNPP_model_biomass <- lmerTest::lmer(BNPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
+anova(BNPP_model_biomass) #0.007883
+
+### NPP Graph ####
+
+#### NPP Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+NPP_model <- aov(NPP ~ overall_group, data = NPP_Join)
+summary(NPP_model) #0.0172
+
+#run model not using any plants that had biomass removed
+NPP_model_noCG <- aov(NPP ~ overall_group, data = NPP_Join_CGRemoval)
+summary(NPP_model_noCG) #0.0101
+
+# run model accounting for biomass removed
+NPP_model_biomass <- lmerTest::lmer(NPP ~ overall_group + (1 | biomass_removed), data = NPP_Join)
+anova(NPP_model_biomass) #0.009993
+
+
+#### SLA Graph ####
+
+
+
+#### SLA Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+SLA_model <- aov(SLA ~ overall_group, data = Leaf_Data_Join)
+summary(SLA_model) #1.1e-05
+
+#run model not using any plants that had biomass removed
+SLA_model_noCG <- aov(SLA ~ overall_group, data = Leaf_Data_Join_CGRemoval)
+summary(SLA_model_noCG) #p=0.00234
+
+# run model accounting for biomass removed
+SLA_model_biomass <- lmerTest::lmer(SLA ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
+anova(SLA_model_biomass) #p=8.0788e-06
+
+#### Leaf Thickness Graph ####
+
+#### Leaf Thickness Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+Thickness_model <- aov(leaf_thickness ~ overall_group, data = Leaf_Data_Join)
+summary(Thickness_model) #2.72e-13
+
+#run model not using any plants that had biomass removed
+Thickness_model_noCG <- aov(leaf_thickness ~ overall_group, data = Leaf_Data_Join_CGRemoval)
+summary(Thickness_model_noCG) #p=1.32e-05
+
+# run model accounting for biomass removed
+Thickness_model_biomass <- lmerTest::lmer(leaf_thickness ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
+anova(Thickness_model_biomass) #p=2.588e-11
+
+#### LDMC Graph ####
+
+#### LDMC Stats ####
+
+# Run simplest model, anova comparing SLA to overall_group
+LDMC_model <- aov(LDMC ~ overall_group, data = Leaf_Data_Join)
+summary(LDMC_model) #3.68e-07
+
+#run model not using any plants that had biomass removed
+LDMC_model_noCG <- aov(LDMC ~ overall_group, data = Leaf_Data_Join_CGRemoval)
+summary(LDMC_model_noCG) #p=1.03e-07
+
+# run model accounting for biomass removed
+LDMC_model_biomass <- lmerTest::lmer(LDMC ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
+anova(LDMC_model_biomass) #p=1.433e-08
+
 
