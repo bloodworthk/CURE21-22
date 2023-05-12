@@ -33,7 +33,11 @@ PlantID <- read.csv("plant_IDs.csv", header = TRUE, na.strings = "", colClasses 
   separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
   #remove fall P185, P190, P193 because they only contained crabgrass throughout experiment
   filter(fall_plant!="P185" & fall_plant!="P190" & fall_plant!="P193")
-  
+
+#read in biomass removed data
+Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>% 
+  separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
+  select(fall_treatment, fall_day, fall_plant, overall_group, biomass_removed)
 
 #read in weekly data
 Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
@@ -46,7 +50,19 @@ ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = ""
 #read in end timepoint leaf metrics
 Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "factor", "factor", "numeric", "numeric", "numeric", "numeric")) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") 
-  
+
+
+#### Clean Up Biomass Removed Data and add to Plant_ID####
+Biomass_Removed$fall_treatment <- gsub(" ","",Biomass_Removed$fall_treatment)
+Biomass_Removed$fall_day <- gsub(" ","",Biomass_Removed$fall_day)
+Biomass_Removed$fall_plant <- gsub("p","P",Biomass_Removed$fall_plant)
+Biomass_Removed$fall_plant <- gsub(" ","",Biomass_Removed$fall_plant)
+
+PlantID_BiomassRemoved<-PlantID %>% 
+  full_join(Biomass_Removed)
+#replace NAs with zero for biomass_removed
+PlantID_BiomassRemoved$biomass_removed[is.na(PlantID_BiomassRemoved$biomass_removed)] <- 0
+
 
 #### Clean Up Data Through Time Data ####
 
@@ -76,23 +92,24 @@ Through_Time_Fall<-Through_Time %>%
   select(-spring_plant_ID) %>% 
   separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
   filter(fall_plant!="P185" & fall_plant!="P190" & fall_plant!="P193") %>% 
-  full_join(PlantID) %>% 
+  full_join(PlantID_BiomassRemoved) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  mutate(fall_plant_ID=paste(fall_day,fall_treatment,fall_plant,sep="_")) %>% 
-  select(overall_group, week_num,fall_plant_ID,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity)
+  select(overall_group, week_num,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity,biomass_removed)
 
 Through_Time_Spring<-Through_Time %>% 
   filter(spring_plant_ID!="NA") %>% 
   select(-fall_plant_ID) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
-  full_join(PlantID) %>% 
+  full_join(PlantID_BiomassRemoved) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  mutate(fall_plant_ID=paste(fall_day,fall_treatment,fall_plant,sep="_")) %>% 
-  select(overall_group, week_num,fall_plant_ID,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity)
+  select(overall_group, week_num,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity,biomass_removed)
 
 #join fall and spring through time
 Through_Time_Join<-Through_Time_Fall %>% 
   rbind(Through_Time_Spring) 
+#remove rows before week 9 that have biomass removal in them
+Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through_Time_Join$biomass_removed > 0), ]
+
 
 #### Clean Up EndPoint Data ####
 
@@ -100,12 +117,12 @@ Through_Time_Join<-Through_Time_Fall %>%
 
 End_Time_Point <- Through_Time_Join %>% 
   filter(week_num=="22") %>% 
-  select(-c(week_num,fall_plant_ID,soil_moisture,light_avail,air_temp,humidity))
+  select(-c(week_num,soil_moisture,light_avail,air_temp,humidity))
 
 #join ANPP_BNPP dataframe with plant
 NPP_Join <- ANPP_BNPP %>%
   #join Plant data
-  full_join(PlantID) %>%
+  full_join(PlantID_BiomassRemoved) %>%
   #remove any plants with NAs for Alive ANPP because they didn't get measured
   drop_na(alive_ANPP_g) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
@@ -113,16 +130,16 @@ NPP_Join <- ANPP_BNPP %>%
   rowwise() %>% 
   #total up the total NPP
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
-  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments) 
+  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,biomass_removed,comments) 
 
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
   #remove plants with no leaf data
   drop_na(wet_leaf_weight) %>% 
-  full_join(PlantID) %>%
+  full_join(PlantID_BiomassRemoved) %>%
   drop_na(leaf_number) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness) %>% 
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
-  mutate(SLA = leaf_area / dry_leaf_weight) 
+  mutate(SLA = leaf_area / dry_leaf_weight) %>% 
+  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness,biomass_removed)
 
