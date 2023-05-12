@@ -1,4 +1,4 @@
-#### Master Script for CURE 21-22 Manuscript ####
+#### Winter Script for CURE 21-22 Manuscript ####
 
 
 #### Load in packages ####
