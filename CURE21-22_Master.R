@@ -163,6 +163,17 @@ Leaf_Data_Join_CGRemoval <- Leaf_Data_Join %>%
 
 #### Wk22 Max Leaf Length Graph ####
 
+MaxLL_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Avg Leaf Length (mm)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=600)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
 #### Wk22 Max Leaf Length Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
@@ -179,6 +190,16 @@ anova(MaxLL_model_biomass) #p=0.07772
 
 #### Wk22 Max Plant Height Graph ####
 
+MaxPH_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Avg Plant Height (mm)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=400)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
 
 #### Wk22 Max Plant Height Stats ####
 
@@ -196,12 +217,23 @@ anova(MaxPH_model_biomass) #p=0.001194
 
 #### Wk22 Leaf Number Graph ####
 
+Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Avg Leaf Number") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=80)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
 
 #### Wk22 Leaf Number Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
 leaf_num_model <- aov(leaf_num ~ overall_group, data = End_Time_Point)
-summary(leaf_num_model) #2.27e-06
+summary(leaf_num_model) #2.0e-09
 
 #run model not using any plants that had biomass removed
 leaf_num_model_noCG <- aov(leaf_num ~ overall_group, data = End_Time_Point_CGRemoval)
@@ -209,9 +241,20 @@ summary(leaf_num_model_noCG) #p=2.48e-09
 
 # run model accounting for biomass removed
 leaf_num_model_biomass <- lmerTest::lmer(leaf_num ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
-anova(leaf_num_model_biomass) #p=9.287e-10
+anova(leaf_num_model_biomass) #p=2.112e-09
 
 #### Alive ANPP Graph ####
+
+Alive_ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Alive ANPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=2)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
 
 #### Alive ANPP Stats ####
 
@@ -229,6 +272,19 @@ anova(alive_ANPP_model_biomass) #0.0003199
 
 ### Dead ANPP Graph ####
 
+Dead_ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = dead_ANPP_g, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Dead ANPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=2)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
+
 #### Dead ANPP Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
@@ -244,6 +300,18 @@ dead_ANPP_model_biomass <- lmerTest::lmer(dead_ANPP_g ~ overall_group + (1 | bio
 anova(dead_ANPP_model_biomass) #0.01366
 
 ### Total ANPP Graph ####
+
+ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = total_ANPP_g, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Total ANPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=3)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 #### Total ANPP Stats ####
 
@@ -261,6 +329,19 @@ anova(total_ANPP_model_biomass) #0.05528
 
 ### BNPP Graph ####
 
+BNPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="BNPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=2)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
+
 #### BNPP Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
@@ -276,6 +357,19 @@ BNPP_model_biomass <- lmerTest::lmer(BNPP_g ~ overall_group + (1 | biomass_remov
 anova(BNPP_model_biomass) #0.007883
 
 ### NPP Graph ####
+
+NPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = NPP, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Total NPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=4)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
 
 #### NPP Stats ####
 
@@ -297,7 +391,7 @@ anova(NPP_model_biomass) #0.009993
 SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = SLA, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y = "Specific Leaf Area") +
+  labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=800)+
   #change color of treatments
@@ -322,6 +416,18 @@ anova(SLA_model_biomass) #p=8.0788e-06
 
 #### Leaf Thickness Graph ####
 
+LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Leaf Thickness (mm)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=0.5)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
 #### Leaf Thickness Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
@@ -337,6 +443,18 @@ Thickness_model_biomass <- lmerTest::lmer(leaf_thickness ~ overall_group + (1 | 
 anova(Thickness_model_biomass) #p=2.588e-11
 
 #### LDMC Graph ####
+
+LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = LDMC, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Leaf Dry Matter Content") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=5)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 #### LDMC Stats ####
 
