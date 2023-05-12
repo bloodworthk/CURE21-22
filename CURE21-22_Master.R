@@ -5,9 +5,8 @@
 library(githubinstall)
 library(ggplot2)
 library(lmerTest)
+library(stringr)  
 library(tidyverse)
-#set colorblind friendly color palette
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 #### Set working directory ####
 #Bloodworth:mac
@@ -20,11 +19,17 @@ setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-
 #Add a margin of 15 and make the y-axis text size 25. Make the plot title size 30 and vertically justify it to 2.  Do not add any grid lines.  
 #Do not add a legend title, and make the legend size 20
 theme_update(axis.title.x=element_text(size=50, vjust=-0.35, margin=margin(t=12)),
-             axis.text.x=element_text(size=50), axis.title.y=element_text(size=50, angle=90, vjust=0.5,
-                                                                          margin=margin(r=15)), axis.text.y=element_text(size=50), plot.title =
-               element_text(size=50, vjust=2), panel.grid.major=element_blank(),
-             panel.grid.minor=element_blank(),
-             legend.text=element_text(size=50))
+            axis.text.x=element_text(size=50),
+            axis.title.y=element_text(size=50, angle=90, vjust=0.5, margin=margin(r=15)),
+            axis.text.y=element_text(size=50),
+            plot.title =element_blank(),
+            legend.position = "none",
+            legend.text=element_text(size=50),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.background = element_blank(),
+            axis.line = element_line(colour = "black")
+            )
 
 #### Read in Data ####
 
@@ -289,7 +294,17 @@ anova(NPP_model_biomass) #0.009993
 
 #### SLA Graph ####
 
-
+SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = SLA, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y = "Specific Leaf Area") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=800)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 #### SLA Stats ####
 
