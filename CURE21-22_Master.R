@@ -6,6 +6,7 @@ library(githubinstall)
 library(ggplot2)
 library(lmerTest)
 library(stringr)  
+library(multcomp)
 library(tidyverse)
 
 #### Set working directory ####
@@ -173,6 +174,7 @@ MaxLL_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_leaf_length
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 #### Wk22 Max Leaf Length Stats ####
 
@@ -183,6 +185,8 @@ summary(MaxLL_model) #0.0766
 #run model not using any plants that had biomass removed
 MaxLL_model_noCG <- aov(max_leaf_length ~ overall_group, data = End_Time_Point_CGRemoval)
 summary(MaxLL_model_noCG) #p=0.0393
+#post-hoc tests
+summary(glht(MaxLL_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
 
 # run model accounting for biomass removed
 MaxLL_model_biomass <- lmerTest::lmer(max_leaf_length ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
@@ -200,6 +204,7 @@ MaxPH_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_plant_heigh
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 #### Wk22 Max Plant Height Stats ####
 
@@ -227,6 +232,7 @@ Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = leaf_num, fi
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 
 #### Wk22 Leaf Number Stats ####
@@ -255,6 +261,7 @@ Alive_ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = alive_ANPP_g, fi
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
 
 #### Alive ANPP Stats ####
 
