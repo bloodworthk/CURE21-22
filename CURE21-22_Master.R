@@ -106,16 +106,21 @@ End_Time_Point <- Through_Time_Join %>%
 NPP_Join <- ANPP_BNPP %>%
   #join Plant data
   full_join(PlantID) %>%
+  #remove any plants with NAs for Alive ANPP because they didn't get measured
+  drop_na(alive_ANPP_g) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   #compute mutate step row by row
   rowwise() %>% 
   #total up the total NPP
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
-  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments,notes) #NAs -- not sure why?
+  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,comments) 
 
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
+  #remove plants with no leaf data
+  drop_na(wet_leaf_weight) %>% 
   full_join(PlantID) %>%
+  drop_na(leaf_number) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness) %>% 
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
