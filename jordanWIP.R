@@ -79,6 +79,7 @@ All_TempGraph <- ggplot(TempSubset,aes(x=week_num, y=Air_Temp_Mean,group=treatme
   geom_line(aes(color=treatment,linetype=treatment),size=1)+
   scale_linetype_manual(values=c("solid","dashed"))+
   scale_shape_manual(values=c(1,16))+
+  scale_color_manual(values = c("black", "red")) +
   geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2)+
   xlab("Week Number")+
   ylab("Temperature (C)")+
@@ -119,6 +120,7 @@ All_HumidityGraph <- ggplot(HumiditySubset,aes(x=week_num, y=humidity_Mean,group
   geom_line(aes(color=treatment,linetype=treatment),size=2)+
   scale_linetype_manual(values=c("solid","dashed"))+
   scale_shape_manual(values=c(1,16))+
+  scale_color_manual(values = c("black", "red")) +
   geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2)+
   xlab("Week Number")+
   ylab("Humidity (units?)")+
@@ -161,6 +163,7 @@ All_SMGraph <- ggplot(SMSubset,aes(x=week_num, y=sm_Mean,group=treatment))+
   geom_point(aes(color=treatment,shape=treatment),size=5)+
   geom_line(aes(color=treatment,linetype=treatment),size=2)+
   scale_linetype_manual(values=c("solid","dashed"))+
+  scale_color_manual(values = c("black", "red")) +
   scale_shape_manual(values=c(1,16))+
   geom_errorbar(aes(ymin=sm_Mean-sm_St_Error,ymax=sm_Mean+sm_St_Error),width=0.2)+
   xlab("Week Number")+
@@ -200,6 +203,7 @@ All_LightGraph <- ggplot(LightSubset,aes(x=week_num, y=light_Mean,group=treatmen
   geom_point(aes(color=treatment,shape=treatment),size=5)+
   geom_line(aes(color=treatment,linetype=treatment),size=2)+
   scale_linetype_manual(values=c("solid","dashed"))+
+  scale_color_manual(values = c("black", "red")) +
   scale_shape_manual(values=c(1,16))+
   geom_errorbar(aes(ymin=light_Mean-light_St_Error,ymax=light_Mean+light_St_Error),width=0.2)+
   xlab("Week Number")+
