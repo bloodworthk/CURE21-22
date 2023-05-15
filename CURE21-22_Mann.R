@@ -111,7 +111,7 @@ Through_Time_Spring<-Through_Time %>%
 
 #join fall and spring through time
 Through_Time_Join<-Through_Time_Fall %>% 
-  rbind(Through_Time_Spring) 
+  rbind(Through_Time_Spring)
 #remove rows before week 9 that have biomass removal in them
 #### Don't- this messes up the dataframes for me. Instead, continue to the endpoint data ####
 Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through_Time_Join$biomass_removed > 0), ] #For me, it removes all the biomass removed with values greater than 0, not just in week 9, but in all weeks. That is why I have removed it. I would ask someone to look over my data, as it makes a very big difference
@@ -211,6 +211,16 @@ Heatwave-Heatwave - Control-Heatwave == 0    3.782    170.478   0.022   0.9824
 # run model accounting for biomass removed
 MaxLL_model_biomass <- lmerTest::lmer(max_leaf_length ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
 anova(MaxLL_model_biomass) #p=0.02038
+
+#Post-Hoc biomass removed
+summary(glht(MaxLL_model_biomass, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH"))
+
+Linear Hypotheses:
+                                          Estimate   Std. Error z value   Pr(>|z|)  
+Control-Heatwave - Control-Control == 0    -264.41     103.54  -2.554     0.0299 *
+  Heatwave-Heatwave - Control-Control == 0   -251.68     108.11  -2.328   0.0299 *
+  Heatwave-Heatwave - Control-Heatwave == 0    12.73     109.87   0.116   0.9078  
+
 
 #### Wk22 Max Plant Height Graph ####
 
