@@ -30,13 +30,20 @@ library(tidyverse)
 # Set Theme
 ###
 
-theme_update(axis.title.x=element_text(size=50, vjust=-0.35, margin=margin(t=12)),
-             axis.text.x=element_text(size=50),
-             axis.title.y=element_text(size=50, angle=90, vjust=0.5, margin=margin(r=15)),
-             axis.text.y=element_text(size=50),
+#### Update ggplot2 theme ####
+#Update ggplot2 theme - make box around the x-axis title size 30, vertically justify x-axis title to 0.35, 
+#Place a margin of 15 around the x-axis title.  
+#Make the x-axis title size 30. For y-axis title, make the box size 30, put the writing at a 90 degree angle, and vertically justify the title to 0.5.  
+#Add a margin of 15 and make the y-axis text size 25. Make the plot title size 30 and vertically justify it to 2.  Do not add any grid lines.  
+#Do not add a legend title, and make the legend size 20
+
+theme_update(axis.title.x=element_text(size=30, vjust=0.35, margin=margin(t=15)),
+             axis.text.x=element_text(size=30),
+             axis.title.y=element_text(size=30, angle=90, vjust=.5, margin=margin(r=15)),
+             axis.text.y=element_text(size=25),
              plot.title =element_blank(),
-             legend.position = "none",
-             legend.text=element_text(size=50),
+             legend.position = "top",
+             legend.text=element_text(size=20),
              panel.grid.major = element_blank(),
              panel.grid.minor = element_blank(),
              panel.background = element_blank(),
@@ -69,15 +76,13 @@ TempSubset <- df_all %>%
 
 All_TempGraph <- ggplot(TempSubset,aes(x=week_num, y=Air_Temp_Mean,group=treatment))+
   geom_point(aes(color=treatment,shape=treatment),size=5)+
-  geom_line(aes(color=treatment,linetype=treatment),size=2)+
+  geom_line(aes(color=treatment,linetype=treatment),size=1)+
   scale_linetype_manual(values=c("solid","dashed"))+
   scale_shape_manual(values=c(1,16))+
   geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2)+
-  xlab(element_blank())+
-  ylab(element_blank())+
-  expand_limits(y=c(10,30))+
-  theme_bw() +
-  theme(legend.position = "none",axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.text.x = element_blank(),axis.ticks.x = element_blank(),text=element_text(size=30),panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),axis.text = element_text(color="black")) 
+  xlab("Week Number")+
+  ylab("Temperature (C)")+
+  expand_limits(y=c(10,30))
 
 # View Graph
 
@@ -85,12 +90,12 @@ All_TempGraph
 
 #
 #Check for normality
-shapiro.test(TempSubset$Air_Temp_Mean)
-# p = .253 NORMAL :)
+shapiro.test(df_all$air_temp)
+# Not Normal
 
-parametric_temp_aov <- aov(data = TempSubset, Air_Temp_Mean ~ treatment)
-summary(temp_aov)
-# P = .313 --- No signif :(
+kruskal.test(data = df_all, air_temp ~ treatment)
+# p = p-value < 2.2e-16
+
 
 ###
 # Abiotic Humidity Figure
@@ -115,24 +120,22 @@ All_HumidityGraph <- ggplot(HumiditySubset,aes(x=week_num, y=humidity_Mean,group
   scale_linetype_manual(values=c("solid","dashed"))+
   scale_shape_manual(values=c(1,16))+
   geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2)+
-  xlab(element_blank())+
-  ylab(element_blank())+
-  expand_limits(y=c(10,30))+
-  theme_bw() +
-  theme(legend.position = "none",axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.text.x = element_blank(),axis.ticks.x = element_blank(),text=element_text(size=30),panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),axis.text = element_text(color="black")) 
+  xlab("Week Number")+
+  ylab("Humidity (units?)")+
+  expand_limits(y=c(10,30))
 
 # Look at it
 
 All_HumidityGraph
 
 #
+#
 #Check for normality
-shapiro.test(HumiditySubset$humidity_Mean)
-# p = .233 NORMAL :)
+shapiro.test(df_all$humidity)
+# Not Normal
 
-parametric_humidity_aov <- aov(data = HumiditySubset, humidity_Mean ~ treatment)
-summary(parametric_humidity_aov)
-# P = .106 --- No signif :(
+kruskal.test(data = df_all, humidity ~ treatment)
+# p = p-value < 2.2e-16
 
 
 ###
@@ -160,22 +163,20 @@ All_SMGraph <- ggplot(SMSubset,aes(x=week_num, y=sm_Mean,group=treatment))+
   scale_linetype_manual(values=c("solid","dashed"))+
   scale_shape_manual(values=c(1,16))+
   geom_errorbar(aes(ymin=sm_Mean-sm_St_Error,ymax=sm_Mean+sm_St_Error),width=0.2)+
-  xlab(element_blank())+
-  ylab(element_blank())+
-  expand_limits(y=c(10,30))+
-  theme_bw() +
-  theme(legend.position = "none",axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.text.x = element_blank(),axis.ticks.x = element_blank(),text=element_text(size=30),panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),axis.text = element_text(color="black")) 
+  xlab("Week Number")+
+  ylab("Soil Moisture (units?)")+
+  expand_limits(y=c(10,30))
 
 # Look at it
 
 All_SMGraph
 
 #Check for normality
-shapiro.test(SMSubset$sm_Mean)
-# p = .01675 NOT NORMAL :(
+shapiro.test(df_all$soil_moisture)
+#NOT NORMAL :(
 
-kruskal.test(data = SMSubset, sm_Mean ~ treatment)
-# p = .140 --- NOT SIGNIF :(
+kruskal.test(data = df_all, soil_moisture ~ treatment)
+# p-value < 2.2e-16
 
 ###
 # Abiotic Light Figure
@@ -201,19 +202,17 @@ All_LightGraph <- ggplot(LightSubset,aes(x=week_num, y=light_Mean,group=treatmen
   scale_linetype_manual(values=c("solid","dashed"))+
   scale_shape_manual(values=c(1,16))+
   geom_errorbar(aes(ymin=light_Mean-light_St_Error,ymax=light_Mean+light_St_Error),width=0.2)+
-  xlab(element_blank())+
-  ylab(element_blank())+
-  expand_limits(y=c(10,30))+
-  theme_bw() +
-  theme(legend.position = "none",axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.text.x = element_blank(),axis.ticks.x = element_blank(),text=element_text(size=30),panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),axis.text = element_text(color="black")) 
+  xlab("Week Number")+
+  ylab("Light Availability (units?)")+
+  expand_limits(y=c(10,30))
 
 #Look at it
 
 All_LightGraph
 
 #Check for normality
-shapiro.test(LightSubset$light_Mean)
-# p = .010 --- NOT NORMAL :(
+shapiro.test(df_all$light_avail)
+# p-value < 2.2e-16
 
-kruskal.test(data = LightSubset, light_Mean ~ treatment)
-# p = .718 --- NOT SIGNIFICANT :(
+kruskal.test(data = df_all, light_avail ~ treatment)
+#p-value < 2.2e-16
