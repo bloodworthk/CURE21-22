@@ -45,8 +45,8 @@ Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "
   select(fall_treatment, fall_day, fall_plant, overall_group, biomass_removed)
 
 #read in weekly data
-Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "factor", "factor", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
-  select(-fall_treatment,-spring_treatment)
+Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
+  select(-c(start_time,end_time))
 
 #read in end timepoint ANPP & BNPP Measurements 
 ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "numeric", "numeric", "numeric", "character")) %>% 
@@ -122,9 +122,8 @@ Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through
 # Create Week 22 Data
 
 End_Time_Point <- Through_Time_Join %>% 
-  filter(week_num=="22") %>% 
-  select(-c(week_num,soil_moisture,light_avail,air_temp,humidity)) %>%
-  replace_na(list(overall_group = "Heatwave-Control"))
+  filter(week_num=="22") %>%
+  select(-c(week_num,soil_moisture,light_avail,air_temp,humidity))
 
 #for models where plants with extra biomass are removed completely
 End_Time_Point_CGRemoval <- End_Time_Point %>% 
@@ -182,44 +181,28 @@ MaxLL_Graph
 
 # Run simplest model, anova comparing SLA to overall_group
 MaxLL_model <- aov(max_leaf_length ~ overall_group, data = End_Time_Point)
-summary(MaxLL_model) #6.33 e-06
+summary(MaxLL_model) #0.0766
 
-summary(glht(MaxLL_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH"))
-
-Linear Hypotheses:
-                                          Estimate   Std. Error  t value  Pr(>|t|)    
-Control-Heatwave - Control-Control == 0   -264.398     64.493  -4.100   0.000175 ***
-  Heatwave-Control - Control-Control == 0   -255.390     49.113  -5.200 2.75e-06 ***
-  Heatwave-Heatwave - Control-Control == 0  -252.012     67.334  -3.743 0.000466 ***
-  Heatwave-Control - Control-Heatwave == 0     9.009     50.602   0.178 0.950342    
-Heatwave-Heatwave - Control-Heatwave == 0   12.386     68.428   0.181   0.950342    
-Heatwave-Heatwave - Heatwave-Control == 0    3.378     54.177   0.062   0.950342    
 
 #run model not using any plants that had biomass removed
 MaxLL_model_noCG <- aov(max_leaf_length ~ overall_group, data = End_Time_Point_CGRemoval)
-summary(MaxLL_model_noCG) #p=0.0505
+summary(MaxLL_model_noCG) #p=0.0393
 #post-hoc tests
 summary(glht(MaxLL_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
 
 Linear Hypotheses:
-                                         Estimate  Std. Error  t value   Pr(>|t|)  
-Control-Heatwave - Control-Control == 0   -340.367    152.172  -2.237   0.0739 .
-Heatwave-Heatwave - Control-Control == 0  -336.585    166.865  -2.017   0.0739 .
-Heatwave-Heatwave - Control-Heatwave == 0    3.782    170.478   0.022   0.9824
+                                          Estimate  Std. Error  t value Pr(>|t|)  
+Control-Heatwave - Control-Control == 0    -35.517     23.146  -1.534   0.2549  
+Heatwave-Control - Control-Control == 0    -62.250     22.964  -2.711   0.0460 *
+Heatwave-Heatwave - Control-Control == 0   -53.908     23.754  -2.269   0.0749 .
+Heatwave-Control - Control-Heatwave == 0   -26.734     23.315  -1.147   0.3806  
+Heatwave-Heatwave - Control-Heatwave == 0  -18.391     24.094  -0.763   0.5361  
+Heatwave-Heatwave - Heatwave-Control == 0    8.343     23.920   0.349   0.7278  
 
 
 # run model accounting for biomass removed
 MaxLL_model_biomass <- lmerTest::lmer(max_leaf_length ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
-anova(MaxLL_model_biomass) #p=0.02038
-
-#Post-Hoc biomass removed
-summary(glht(MaxLL_model_biomass, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH"))
-
-Linear Hypotheses:
-                                          Estimate   Std. Error z value   Pr(>|z|)  
-Control-Heatwave - Control-Control == 0    -264.41     103.54  -2.554     0.0299 *
-  Heatwave-Heatwave - Control-Control == 0   -251.68     108.11  -2.328   0.0299 *
-  Heatwave-Heatwave - Control-Heatwave == 0    12.73     109.87   0.116   0.9078  
+anova(MaxLL_model_biomass) #p=0.07772
 
 
 #### Wk22 Max Plant Height Graph ####
@@ -245,6 +228,17 @@ summary(MaxPH_model) #0.00117
 
 #Post-HOC simple
 summary(glht(MaxPH_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
+
+Linear Hypotheses:
+  Estimate Std. Error t value Pr(>|t|)   
+Control-Heatwave - Control-Control == 0    -33.357     10.688  -3.121  0.00614 **
+Heatwave-Control - Control-Control == 0    -13.112     10.593  -1.238  0.26059   
+Heatwave-Heatwave - Control-Control == 0   -38.168     10.790  -3.538  0.00296 **
+Heatwave-Control - Control-Heatwave == 0    20.246     10.642   1.902  0.08765 . 
+Heatwave-Heatwave - Control-Heatwave == 0   -4.811     10.837  -0.444  0.65751   
+Heatwave-Heatwave - Heatwave-Control == 0  -25.057     10.743  -2.332  0.04120 * 
+
+
 
 #run model not using any plants that had biomass removed
 MaxPH_model_noCG <- aov(max_plant_height ~ overall_group, data = End_Time_Point_CGRemoval)
