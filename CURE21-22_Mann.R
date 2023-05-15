@@ -45,8 +45,8 @@ Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "
   select(fall_treatment, fall_day, fall_plant, overall_group, biomass_removed)
 
 #read in weekly data
-Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
-  select(-c(student_name,start_time,end_time))
+Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "factor", "factor", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
+  select(-fall_treatment,-spring_treatment)
 
 #read in end timepoint ANPP & BNPP Measurements 
 ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "numeric", "numeric", "numeric", "character")) %>% 
@@ -173,6 +173,8 @@ MaxLL_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_leaf_length
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
 #save at 2000 x 1500
+MaxLL_Graph
+
 
 #### Wk22 Max Leaf Length Stats ####
 
@@ -203,12 +205,16 @@ MaxPH_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_plant_heigh
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
 #save at 2000 x 1500
+MaxPH_Graph
 
 #### Wk22 Max Plant Height Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
 MaxPH_model <- aov(max_plant_height ~ overall_group, data = End_Time_Point)
 summary(MaxPH_model) #0.00117
+
+#Post-HOC simple
+summary(glht(MaxPH_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
 
 #run model not using any plants that had biomass removed
 MaxPH_model_noCG <- aov(max_plant_height ~ overall_group, data = End_Time_Point_CGRemoval)
