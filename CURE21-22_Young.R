@@ -9,6 +9,8 @@ library(lmerTest)
 library(stringr)  
 library(multcomp)
 library(tidyverse)
+library(olsrr)
+
 
 #### Set working directory ####
 setwd("C:/Users/alyou/Box/SIDE PROJECTS/CURE21-22/Data")
@@ -48,8 +50,10 @@ Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "
   select(fall_treatment, fall_day, fall_plant, overall_group, biomass_removed)
 
 #read in weekly data
-Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
-  select(-c(student_name,start_time,end_time))
+Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", 
+colClasses = c("character", "character", "character", "character","character", "numeric", "factor", 
+               "factor", "factor", "factor", "factor","numeric", "numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
+  select(-c(ï..student_name,start_time,end_time))
 
 #read in end timepoint ANPP & BNPP Measurements 
 ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "numeric", "numeric", "numeric", "character")) %>% 
@@ -182,7 +186,7 @@ leafnum_week2 <- Through_Time_Final2 %>%
   rename(week_2 = week_num)
 leafnum_week1_2 <- leafnum_week1 %>%
   full_join(leafnum_week2) %>%
-  mutate(slope = (leafnum_wk2 - leafnum_wk1)/1)
+  mutate(slope = (leafnum_wk2 - leafnum_wk1)/1) #2 timepoints but the difference in x-axis (weeks) is 1
 
 leafnum_W1_2 <- leafnum_week1_2 %>%
   mutate(overall_group = ifelse(overall_group=="Control-Control", "Control", 
@@ -206,7 +210,7 @@ leafnum_week5 <- Through_Time_Final2 %>%
   rename(week_5 = week_num)
 leafnum_week3_5 <- leafnum_week3 %>%
   full_join(leafnum_week5) %>%
-  mutate(slope = (leafnum_wk5 - leafnum_wk3)/2)
+  mutate(slope = (leafnum_wk5 - leafnum_wk3)/2)#3 timepoints but the difference in x-axis (weeks) is 2
 
 
 leafnum_W3_5 <- leafnum_week3_5 %>%
@@ -231,7 +235,7 @@ leafnum_week18 <- Through_Time_Final2 %>%
   rename(week_18 = week_num)
 leafnum_W9_18 <- leafnum_week9 %>%
   full_join(leafnum_week18) %>%
-  mutate(slope = (leafnum_wk18 - leafnum_wk9)/9) %>%
+  mutate(slope = (leafnum_wk18 - leafnum_wk9)/9)#2 timepoints but the difference in x-axis (weeks) is 9 %>%
   add_column(timepoint = "W9-18") %>%
   select(overall_group, spring_plant_ID, slope, timepoint,biomass_removed)
 
@@ -268,6 +272,14 @@ ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-5', 'W9-18'
 
 
 #### LeafNum TP1 Stats ####
+# check for normality #
+test <- lm(data = leafnum_W1_2, InvSlope ~ overall_group)
+ols_plot_resid_hist(test)
+ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality
+
+#try transformations
+leafnum_W1_2 <- leafnum_W1_2 %>%
+  mutate(InvSlope = 1/slope)
 
 # Run simplest model, anova comparing SLA to overall_group
 LL_TP1_model <- aov(slope ~ overall_group, data = leafnum_W1_2)
