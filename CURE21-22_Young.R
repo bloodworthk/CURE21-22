@@ -167,12 +167,7 @@ Leaf_Data_Join_CGRemoval <- Leaf_Data_Join %>%
 #####################################################################
 # Relative Growth Rate - Leaf Number #
 Through_Time_Final2 <- Through_Time_Join %>%
-  drop_na(leaf_num) %>%
-  group_by(overall_group, spring_plant_ID) %>%
-  #I don't think we need this part anymore? K
-  filter(spring_plant_ID != "Wed_SC_125" | leaf_num != 34) %>% #removing incorrectly entered columns
-  filter(spring_plant_ID != "Wed_SH_177" | leaf_num != 22) %>% #removing incorrectly entered columns
-  filter(spring_plant_ID != "Wed_SH_165" | max_plant_height != 79) #removing incorrectly entered columns
+  drop_na(leaf_num) 
 
 # Week 1-2 slope #
 leafnum_week1 <- Through_Time_Final2 %>%
