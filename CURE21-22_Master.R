@@ -326,13 +326,9 @@ Normality_test_TP3 <- lm(data = leafnum_W5_9, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP3)
 ols_test_normality(Normality_test_TP3)
 
-Normality_test_TP3_TF <- lm(data = leafnum_W5_9, TF_leafnum_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP3_TF)
-ols_test_normality(Normality_test_TP3_TF)
-
 # Run simplest model, an ova comparing SLA to overall_group
-LL_TP3_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W5_9)
-summary(LL_TP3_model) #p=0.000136
+LL_TP3_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W5_9)
+summary(LL_TP3_model) #p=0.911
 
 #### Leaf Number TP4 Stats ####
 # check for normality #
@@ -341,8 +337,8 @@ ols_plot_resid_hist(Normality_test_TP4)
 ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-LL_TP4_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W18_20)
-summary(LL_TP4_model) #p=4.13e-10
+LL_TP4_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W18_20)
+summary(LL_TP4_model) #p=4.73e-05e-10
 #run post hoc test
 
 #### Leaf Number TP5 Stats ####
