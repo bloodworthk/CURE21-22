@@ -117,11 +117,14 @@ Through_Time_Join<-Through_Time_Fall %>%
 #remove rows before week 9 that have biomass removal in them
 Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through_Time_Join$biomass_removed > 0), ]
 
+Through_Time_Join_NCG<-Through_Time_Join %>% 
+  filter(biomass_removed==0)
+
 #### Through Time Relative Growth Rate Data ####
   
 # Week 1-2 slope #
 
-leafnum_week1 <- Through_Time_Join %>%
+leafnum_week1 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "1") %>%
   rename(survival_wk1=survival) %>% 
@@ -131,7 +134,7 @@ leafnum_week1 <- Through_Time_Join %>%
   rename(week_1 = week_num)
 
 
-leafnum_week2 <- Through_Time_Join %>%
+leafnum_week2 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "2") %>%
   rename(survival_wk2=survival) %>% 
@@ -153,8 +156,8 @@ leafnum_W1_2 <- leafnum_week1 %>%
   select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed)
 
 
-# Week 3-5 slope #
-leafnum_week3 <- Through_Time_Join %>%
+# Week 3-4 slope #
+leafnum_week3 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "3") %>%
   rename(survival_wk3=survival) %>% 
@@ -163,7 +166,32 @@ leafnum_week3 <- Through_Time_Join %>%
   rename(maxPH_wk3 = max_plant_height) %>% 
   rename(week_3 = week_num)
 
-leafnum_week5 <- Through_Time_Final2 %>%
+leafnum_week4 <- Through_Time_Join_NCG %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "4") %>%
+  rename(survival_wk4=survival) %>% 
+  rename(leafnum_wk4 = leaf_num) %>%
+  rename(maxLL_wk4 = max_leaf_length) %>% 
+  rename(maxPH_wk4 = max_plant_height) %>% 
+  rename(week_4 = week_num)
+
+leafnum_W3_4 <- leafnum_week3 %>%
+  full_join(leafnum_week4) %>%
+  mutate(leafnum_slope = (leafnum_wk4 - leafnum_wk3)/1) %>%  #3 timepoints but the difference in x-axis (weeks) is 2
+  mutate(maxLL_slope = (maxLL_wk4 - maxLL_wk3)/1) %>% 
+  mutate(maxPH_slope = (maxPH_wk4 - maxPH_wk3)/1) %>% 
+  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control", 
+                        ifelse(overall_group=="Control-Heatwave", "Control",
+                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
+                        ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W3-4") %>%
+  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
+  na.omit()
+
+
+# Week 5-9 slope #
+
+leafnum_week5 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "5") %>%
   rename(survival_wk5=survival) %>% 
@@ -172,22 +200,7 @@ leafnum_week5 <- Through_Time_Final2 %>%
   rename(maxPH_wk5 = max_plant_height) %>% 
   rename(week_5 = week_num)
 
-leafnum_W3_5 <- leafnum_week3 %>%
-  full_join(leafnum_week5) %>%
-  mutate(leafnum_slope = (leafnum_wk5 - leafnum_wk3)/2) %>%  #3 timepoints but the difference in x-axis (weeks) is 2
-  mutate(maxLL_slope = (maxLL_wk5 - maxLL_wk3)/2) %>% 
-  mutate(maxPH_slope = (maxPH_wk5 - maxPH_wk3)/2) %>% 
-  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control", 
-                        ifelse(overall_group=="Control-Heatwave", "Control",
-                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
-                        ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
-  add_column(timepoint = "W3-5") %>%
-  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
-  na.omit()
-
-
-# Week 9-18 slope #
-leafnum_week9 <- Through_Time_Join %>%
+leafnum_week9 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "9") %>%
   rename(survival_wk9 = survival) %>% 
@@ -196,7 +209,20 @@ leafnum_week9 <- Through_Time_Join %>%
   rename(maxPH_wk9 = max_plant_height) %>% 
   rename(week_9 = week_num)
 
-leafnum_week18 <- Through_Time_Join %>%
+leafnum_W5_9 <- leafnum_week5 %>%
+  full_join(leafnum_week9) %>%
+  mutate(leafnum_slope = (leafnum_wk9 - leafnum_wk5)/4) %>%  #2 timepoints but the difference in x-axis (weeks) is 9 
+  mutate(maxLL_slope = (maxLL_wk9 - maxLL_wk5)/4) %>% 
+  mutate(maxPH_slope = (maxPH_wk9 - maxPH_wk5)/4) %>% 
+  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W5-9") %>%
+  select(overall_group, spring_plant_ID, timepoint,leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
+  na.omit()
+
+
+# Week 18-20 slope #
+
+leafnum_week18 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "18") %>%
   rename(survival_wk18 = survival) %>% 
@@ -205,31 +231,35 @@ leafnum_week18 <- Through_Time_Join %>%
   rename(maxPH_wk18 = max_plant_height) %>% 
   rename(week_18 = week_num)
 
-leafnum_W9_18 <- leafnum_week9 %>%
-  full_join(leafnum_week18) %>%
-  mutate(leafnum_slope = (leafnum_wk18 - leafnum_wk9)/9) %>%  #2 timepoints but the difference in x-axis (weeks) is 9 
-  mutate(maxLL_slope = (maxLL_wk18 - maxLL_wk9)/9) %>% 
-  mutate(maxPH_slope = (maxPH_wk18 - maxPH_wk9)/9) %>% 
-  mutate(overall_group =ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
-  add_column(timepoint = "W9-18") %>%
+leafnum_week20 <- Through_Time_Join_NCG %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "20") %>%
+  rename(survival_wk20 = survival) %>% 
+  rename(leafnum_wk20 = leaf_num) %>% 
+  rename(maxLL_wk20 = max_leaf_length) %>% 
+  rename(maxPH_wk20 = max_plant_height) %>% 
+  rename(week_20 = week_num)
+
+leafnum_W18_20 <- leafnum_week18 %>%
+  full_join(leafnum_week20) %>%
+  mutate(leafnum_slope = (leafnum_wk20 - leafnum_wk18)/2) %>%  #2 timepoints but the difference in x-axis (weeks) is 9 
+  mutate(maxLL_slope = (maxLL_wk20 - maxLL_wk18)/2) %>% 
+  mutate(maxPH_slope = (maxPH_wk20 - maxPH_wk18)/2) %>% 
+  add_column(timepoint = "W18-20") %>%
   select(overall_group, spring_plant_ID, timepoint,leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
   na.omit()
 
-#dataframe with no crabgrass plants
-leafnum_W9_18_NCG <- leafnum_W9_18 %>%
-  filter(biomass_removed==0) 
-
-# Week 19-22 slope #
-leafnum_week19 <- Through_Time_Join %>%
+# Week 21-22 slope #
+leafnum_week21 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "19") %>%
-  rename(survival_wk19 = survival) %>% 
-  rename(leafnum_wk19 = leaf_num) %>% 
-  rename(maxLL_wk19 = max_leaf_length) %>% 
-  rename(maxPH_wk19 = max_plant_height) %>% 
-  rename(week_19 = week_num)
+  filter(week_num == "21") %>%
+  rename(survival_wk21 = survival) %>% 
+  rename(leafnum_wk21 = leaf_num) %>% 
+  rename(maxLL_wk21 = max_leaf_length) %>% 
+  rename(maxPH_wk21 = max_plant_height) %>% 
+  rename(week_21 = week_num)
 
-leafnum_week22 <- Through_Time_Join %>%
+leafnum_week22 <- Through_Time_Join_NCG %>%
   dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
   filter(week_num == "22") %>%
   rename(survival_wk22 = survival) %>% 
@@ -238,34 +268,38 @@ leafnum_week22 <- Through_Time_Join %>%
   rename(maxPH_wk22 = max_plant_height) %>% 
   rename(week_22 = week_num)
 
-leafnum_W19_22 <- leafnum_week19 %>%
+leafnum_W21_22 <- leafnum_week21 %>%
   full_join(leafnum_week22) %>%
-  mutate(leafnum_slope = (leafnum_wk22 - leafnum_wk19)/3) %>%
-  mutate(maxLL_slope = (maxLL_wk22 - maxLL_wk19)/3) %>% 
-  mutate(maxPH_slope = (maxPH_wk22 - maxPH_wk19)/3) %>% 
-  mutate(overall_group =ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
-  add_column(timepoint = "W19-22") %>%
+  mutate(leafnum_slope = (leafnum_wk22 - leafnum_wk21)/1) %>%
+  mutate(maxLL_slope = (maxLL_wk22 - maxLL_wk21)/1) %>% 
+  mutate(maxPH_slope = (maxPH_wk22 - maxPH_wk21)/1) %>% 
+  add_column(timepoint = "W21-22") %>%
   select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
   na.omit()
 
-#dataframe with no crabgrass plants
-leafnum_W19_22_NCG <- leafnum_W19_22 %>%
-  filter(biomass_removed==0) 
-
 ### merge all data frames together #
 finalLeafNumSlope <- leafnum_W1_2 %>% 
-  rbind(leafnum_W3_5) %>%
-  rbind(leafnum_W9_18) %>%
-  rbind(leafnum_W19_22)
+  rbind(leafnum_W3_4) %>%
+  rbind(leafnum_W5_9) %>%
+  rbind(leafnum_W18_20) %>%
+  rbind(leafnum_W21_22)
 
 #### Leaf Number Figure ####
-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-5', 'W9-18', 'W19-22')),y=leafnum_slope, fill=overall_group))+
-  geom_boxplot()
-
+Leafnum_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=leafnum_slope, fill=overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Timepoint",y ="Relative Growth Rate") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(-100,50))+
+  #change color of treatments
+  scale_fill_manual(values=c("#76AFE8", "#76AFE8","#E6E291","#CA7E77","#88A76E","#CA7E77")) +
+  scale_x_discrete(breaks=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22'),
+                   labels=c("Pre HW", "HW1", "R1","HW2", "R2"))
+#save at 2000 x 1500
 
 #### Leaf Number TP1 Stats ####
 # check for normality #
-test <- lm(data = leafnum_W1_2, leafnum_slope ~ overall_group)
+Normality_test_TP1 <- lm(data = leafnum_W1_2, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(test)
 ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
 
@@ -278,190 +312,185 @@ summary(LL_TP1_model) #p=0.238
 
 #### Leaf Number TP2 Stats ####
 # check for normality #
-Normality_test_TP2 <- lm(data = leafnum_W3_5, leafnum_slope ~ overall_group)
+Normality_test_TP2 <- lm(data = leafnum_W3_4, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP2)
-ols_test_normality(Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+ols_test_normality(Normality_test_TP2) 
 
 # Run simplest model, anova comparing SLA to overall_group
-LL_TP2_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W3_5)
-summary(LL_TP2_model) #p=0.109
+LL_TP2_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W3_4)
+summary(LL_TP2_model) #p=0.124
 
 #### Leaf Number TP3 Stats ####
 # check for normality #
-Normality_test_TP3 <- lm(data = leafnum_W9_18, leafnum_slope ~ overall_group)
+Normality_test_TP3 <- lm(data = leafnum_W5_9, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP3)
-ols_test_normality(Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+ols_test_normality(Normality_test_TP3)
 
-#try transformations
-leafnum_W9_18 <- leafnum_W9_18 %>%
-  mutate(TF_leafnum_slope = sign(leafnum_slope) * log(1 + abs(leafnum_slope)))
-
-Normality_test_TP3_TF <- lm(data = leafnum_W9_18, TF_leafnum_slope ~ overall_group)
+Normality_test_TP3_TF <- lm(data = leafnum_W5_9, TF_leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP3_TF)
 ols_test_normality(Normality_test_TP3_TF)
 
 # Run simplest model, an ova comparing SLA to overall_group
-LL_TP3_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W9_18)
-summary(LL_TP3_model) #p=0.00105
-#run post hoc test
-
-#run model not using any plants that had biomass removed
-LL_TP3_model_noCG <- aov(leafnum_slope ~ overall_group, data = leafnum_W9_18_NCG)
-summary(LL_TP3_model_noCG) #p=0.00134
-
-# run model accounting for biomass removed
-LL_TP3_model_biomass <- lmerTest::lmer(leafnum_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
-anova(LL_TP3_model_biomass) #p=0.001012
-
+LL_TP3_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W5_9)
+summary(LL_TP3_model) #p=0.000136
 
 #### Leaf Number TP4 Stats ####
 # check for normality #
-Normality_test_TP4 <- lm(data = leafnum_W19_22, leafnum_slope ~ overall_group)
+Normality_test_TP4 <- lm(data = leafnum_W18_20, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP4)
 ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-LL_TP4_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W19_22)
+LL_TP4_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W18_20)
 summary(LL_TP4_model) #p=4.13e-10
 #run post hoc test
 
-#run model not using any plants that had biomass removed
-LL_TP4_model_noCG <- aov(leafnum_slope ~ overall_group, data = leafnum_W19_22_NCG)
-summary(LL_TP4_model_noCG) #p=1.76e-07
-
-# run model accounting for biomass removed
-LL_TP4_model_biomass <- lmerTest::lmer(leafnum_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
-anova(LL_TP4_model_biomass) #p=1.838e-10
-
-#### max leaf length TP1 Stats ####
+#### Leaf Number TP5 Stats ####
 # check for normality #
-maxLL_Normality_test_TP1 <- lm(data = leafnum_W1_2, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(maxLL_Normality_test_TP1)
-ols_test_normality(maxLL_Normality_test_TP1) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+Normality_test_TP5 <- lm(data = leafnum_W21_22, leafnum_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP5)
+ols_test_normality(Normality_test_TP5) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-MaxLL_TP1_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W1_2)
-summary(MaxLL_TP1_model) #p=0.0443
-
-#### max leaf length TP2 Stats ####
-# check for normality #
-maxLL_Normality_test_TP2 <- lm(data = leafnum_W3_5, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(maxLL_Normality_test_TP2)
-ols_test_normality(maxLL_Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
-
-# Run simplest model, anova comparing SLA to overall_group
-maxLL_TP2_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W3_5)
-summary(maxLL_TP2_model) #p=0.0155
-
-#### max leaf length TP3 Stats ####
-# check for normality #
-maxLL_Normality_test_TP3 <- lm(data = leafnum_W9_18, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(maxLL_Normality_test_TP3)
-ols_test_normality(maxLL_Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option 
-
-# Run simplest model, anova comparing SLA to overall_group
-maxLL_TP3_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W9_18)
-summary(maxLL_TP3_model) #p=0.0637
+LL_TP5_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W21_22)
+summary(LL_TP5_model) #p=6.03e-06
 #run post hoc test
 
-#run model not using any plants that had biomass removed
-maxLL_TP3_model_noCG <- aov(maxLL_slope ~ overall_group, data = leafnum_W9_18_NCG)
-summary(maxLL_TP3_model_noCG) #p=0.0429
+#### max leaf length Figure ####
+MaxLL_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=maxLL_slope, fill=overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Timepoint",y ="Relative Growth Rate") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(-200,200))+
+  #change color of treatments
+  scale_fill_manual(values=c("#76AFE8", "#76AFE8","#E6E291","#CA7E77","#88A76E","#CA7E77")) +
+  scale_x_discrete(breaks=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22'),
+                   labels=c("Pre HW", "HW1", "R1","HW2", "R2"))
+#save at 2000 x 1500
 
-# run model accounting for biomass removed
-maxLL_TP3_model_biomass <- lmerTest::lmer(maxLL_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
-anova(maxLL_TP3_model_biomass) #p=0.06541
-
-
-#### max leaf length TP4 Stats ####
+#### Max Leaf Length TP1 Stats ####
 # check for normality #
-maxLL_Normality_test_TP4 <- lm(data = leafnum_W19_22, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(maxLL_Normality_test_TP4)
-ols_test_normality(maxLL_Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
-
-#try transformations
-leafnum_W19_22 <- leafnum_W19_22 %>%
-  mutate(TF_maxLL_slope = sign(maxLL_slope) * log(1 + abs(maxLL_slope)))
-
-maxLL_Normality_test_TP4_TF <- lm(data = leafnum_W19_22, TF_maxLL_slope ~ overall_group)
-ols_plot_resid_hist(maxLL_Normality_test_TP4_TF)
-ols_test_normality(maxLL_Normality_test_TP4_TF) #### not actually better just with KS test but looks better: using these data
-
-#make transformations in leafnum_W19_22_NCG
-leafnum_W19_22_NCG <- leafnum_W19_22_NCG %>%
-  mutate(TF_maxLL_slope = sign(maxLL_slope) * log(1 + abs(maxLL_slope)))
+Normality_test_TP1 <- lm(data = leafnum_W1_2, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(test)
+ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
 
 # Run simplest model, anova comparing SLA to overall_group
-maxLL_TP4_model <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W19_22)
+maxLL_TP1_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W1_2)
+summary(maxLL_TP1_model) #p=0.0443
+#which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
+#wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
+
+
+#### Max Leaf Length TP2 Stats ####
+# check for normality #
+Normality_test_TP2 <- lm(data = leafnum_W3_4, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP2)
+ols_test_normality(Normality_test_TP2) 
+
+# Run simplest model, anova comparing SLA to overall_group
+maxLL_TP2_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W3_4)
+summary(maxLL_TP2_model) #p=0.858
+
+#### Max Leaf Length TP3 Stats ####
+# check for normality #
+Normality_test_TP3 <- lm(data = leafnum_W5_9, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP3)
+ols_test_normality(Normality_test_TP3)
+
+# Run simplest model, an ova comparing SLA to overall_group
+maxLL_TP3_model <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W5_9)
+summary(maxLL_TP3_model) #p=0.0637
+
+#### Max Leaf Length TP4 Stats ####
+# check for normality #
+Normality_test_TP4 <- lm(data = leafnum_W18_20, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP4)
+ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+
+# Run simplest model, anova comparing SLA to overall_group
+maxLL_TP4_model <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W18_20)
 summary(maxLL_TP4_model) #p=0.0107
 #run post hoc test
 
-#run model not using any plants that had biomass removed
-maxLL_TP4_model_noCG <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W19_22_NCG)
-summary(maxLL_TP4_model_noCG) #p=0.00625
-
-# run model accounting for biomass removed
-maxLL_TP4_model_biomass <- lmerTest::lmer(TF_maxLL_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
-anova(maxLL_TP4_model_biomass) #p=0.01067
-
-#### max plant height TP1 Stats ####
+#### Max Leaf Length TP5 Stats ####
 # check for normality #
-maxPH_Normality_test_TP1 <- lm(data = leafnum_W1_2, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(maxPH_Normality_test_TP1)
-ols_test_normality(maxPH_Normality_test_TP1) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option 
+Normality_test_TP5 <- lm(data = leafnum_W21_22, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP5)
+ols_test_normality(Normality_test_TP5) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+
+# Run simplest model, anova comparing SLA to overall_group
+maxLL_TP5_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W21_22)
+summary(maxLL_TP5_model) #p=0.691
+#run post hoc test
+
+#### max plant height Figure ####
+MaxPH_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=maxPH_slope, fill=overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Timepoint",y ="Relative Growth Rate") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(-200,200))+
+  #change color of treatments
+  scale_fill_manual(values=c("#76AFE8", "#76AFE8","#E6E291","#CA7E77","#88A76E","#CA7E77")) +
+  scale_x_discrete(breaks=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22'),
+                   labels=c("Pre HW", "HW1", "R1","HW2", "R2"))
+#save at 2000 x 1500
+
+#### Max Plant Height TP1 Stats ####
+# check for normality #
+Normality_test_TP1 <- lm(data = leafnum_W1_2, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(test)
+ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
 
 # Run simplest model, anova comparing SLA to overall_group
 maxPH_TP1_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W1_2)
 summary(maxPH_TP1_model) #p=0.676
+#which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
+#wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
 
-#### max plant height TP2 Stats ####
+
+#### Max Plant Height TP2 Stats ####
 # check for normality #
-maxPH_Normality_test_TP2 <- lm(data = leafnum_W3_5, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(maxPH_Normality_test_TP2)
-ols_test_normality(maxPH_Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+Normality_test_TP2 <- lm(data = leafnum_W3_4, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP2)
+ols_test_normality(Normality_test_TP2) 
 
 # Run simplest model, anova comparing SLA to overall_group
-maxPH_TP2_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W3_5)
-summary(maxPH_TP2_model) #p=0.174
+maxPH_TP2_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W3_4)
+summary(maxPH_TP2_model) #p=0.268
 
-#### max plant height TP3 Stats ####
+#### Max Plant Height TP3 Stats ####
 # check for normality #
-maxPH_Normality_test_TP3 <- lm(data = leafnum_W9_18, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(maxPH_Normality_test_TP3)
-ols_test_normality(maxPH_Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option 
+Normality_test_TP3 <- lm(data = leafnum_W5_9, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP3)
+ols_test_normality(Normality_test_TP3)
 
-# Run simplest model, anova comparing SLA to overall_group
-maxPH_TP3_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W9_18)
+# Run simplest model, an ova comparing SLA to overall_group
+maxPH_TP3_model <- aov(TF_maxPH_slope ~ overall_group, data = leafnum_W5_9)
 summary(maxPH_TP3_model) #p=0.956
-#run post hoc test
 
-#run model not using any plants that had biomass removed
-maxPH_TP3_model_noCG <- aov(maxPH_slope ~ overall_group, data = leafnum_W9_18_NCG)
-summary(maxPH_TP3_model_noCG) #p=0.675
-
-# run model accounting for biomass removed
-maxPH_TP3_model_biomass <- lmerTest::lmer(maxPH_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
-anova(maxPH_TP3_model_biomass) #p=0.9553
-
-
-#### max plant height TP4 Stats ####
+#### Max Plant Height TP4 Stats ####
 # check for normality #
-maxPH_Normality_test_TP4 <- lm(data = leafnum_W19_22, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(maxPH_Normality_test_TP4)
-ols_test_normality(maxPH_Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+Normality_test_TP4 <- lm(data = leafnum_W18_20, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP4)
+ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-maxPH_TP4_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W19_22)
+maxPH_TP4_model <- aov(TF_maxPH_slope ~ overall_group, data = leafnum_W18_20)
 summary(maxPH_TP4_model) #p=0.137
 #run post hoc test
 
-#run model not using any plants that had biomass removed
-maxPH_TP4_model_noCG <- aov(maxPH_slope ~ overall_group, data = leafnum_W19_22_NCG)
-summary(maxPH_TP4_model_noCG) #p=0.111
+#### Max Plant Height TP5 Stats ####
+# check for normality #
+Normality_test_TP5 <- lm(data = leafnum_W21_22, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP5)
+ols_test_normality(Normality_test_TP5) 
 
-# run model accounting for biomass removed
-maxPH_TP4_model_biomass <- lmerTest::lmer(maxPH_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
-anova(maxPH_TP4_model_biomass) #p=0.1369
+# Run simplest model, anova comparing SLA to overall_group
+maxPH_TP5_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W21_22)
+summary(maxPH_TP5_model) #p=0.054
+#run post hoc test
 
 #### Clean Up EndPoint Data ####
 
