@@ -265,12 +265,12 @@ ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-5', 'W9-18'
 
 #### Leaf Number TP1 Stats ####
 # check for normality #
-test <- lm(data = leafnum_W1_2, slope ~ overall_group)
+test <- lm(data = leafnum_W1_2, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(test)
 ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
 
 # Run simplest model, anova comparing SLA to overall_group
-LL_TP1_model <- aov(slope ~ overall_group, data = leafnum_W1_2)
+LL_TP1_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W1_2)
 summary(LL_TP1_model) #p=0.238
 #which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
 #wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
@@ -278,60 +278,190 @@ summary(LL_TP1_model) #p=0.238
 
 #### Leaf Number TP2 Stats ####
 # check for normality #
-Normality_test_TP2 <- lm(data = leafnum_W3_5, slope ~ overall_group)
+Normality_test_TP2 <- lm(data = leafnum_W3_5, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP2)
 ols_test_normality(Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
 
 # Run simplest model, anova comparing SLA to overall_group
-LL_TP2_model <- aov(slope ~ overall_group, data = leafnum_W3_5)
+LL_TP2_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W3_5)
 summary(LL_TP2_model) #p=0.109
 
 #### Leaf Number TP3 Stats ####
 # check for normality #
-Normality_test_TP3 <- lm(data = leafnum_W9_18, slope ~ overall_group)
+Normality_test_TP3 <- lm(data = leafnum_W9_18, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP3)
 ols_test_normality(Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
 
 #try transformations
 leafnum_W9_18 <- leafnum_W9_18 %>%
-  mutate(TF_slope = sign(slope) * log(1 + abs(slope)))
+  mutate(TF_leafnum_slope = sign(leafnum_slope) * log(1 + abs(leafnum_slope)))
 
-Normality_test_TP3_TF <- lm(data = leafnum_W9_18, TF_slope ~ overall_group)
+Normality_test_TP3_TF <- lm(data = leafnum_W9_18, TF_leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP3_TF)
 ols_test_normality(Normality_test_TP3_TF)
 
-# Run simplest model, anova comparing SLA to overall_group
-LL_TP3_model <- aov(TF_slope ~ overall_group, data = leafnum_W9_18)
+# Run simplest model, an ova comparing SLA to overall_group
+LL_TP3_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W9_18)
 summary(LL_TP3_model) #p=0.00105
 #run post hoc test
 
 #run model not using any plants that had biomass removed
-LL_TP3_model_noCG <- aov(slope ~ overall_group, data = leafnum_W9_18_NCG)
+LL_TP3_model_noCG <- aov(leafnum_slope ~ overall_group, data = leafnum_W9_18_NCG)
 summary(LL_TP3_model_noCG) #p=0.00134
 
 # run model accounting for biomass removed
-LL_TP3_model_biomass <- lmerTest::lmer(slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
+LL_TP3_model_biomass <- lmerTest::lmer(leafnum_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
 anova(LL_TP3_model_biomass) #p=0.001012
 
 
 #### Leaf Number TP4 Stats ####
 # check for normality #
-Normality_test_TP4 <- lm(data = leafnum_W19_22, slope ~ overall_group)
+Normality_test_TP4 <- lm(data = leafnum_W19_22, leafnum_slope ~ overall_group)
 ols_plot_resid_hist(Normality_test_TP4)
 ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-LL_TP4_model <- aov(TF_slope ~ overall_group, data = leafnum_W19_22)
+LL_TP4_model <- aov(TF_leafnum_slope ~ overall_group, data = leafnum_W19_22)
 summary(LL_TP4_model) #p=4.13e-10
 #run post hoc test
 
 #run model not using any plants that had biomass removed
-LL_TP4_model_noCG <- aov(slope ~ overall_group, data = leafnum_W19_22_NCG)
+LL_TP4_model_noCG <- aov(leafnum_slope ~ overall_group, data = leafnum_W19_22_NCG)
 summary(LL_TP4_model_noCG) #p=1.76e-07
 
 # run model accounting for biomass removed
-LL_TP4_model_biomass <- lmerTest::lmer(slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
+LL_TP4_model_biomass <- lmerTest::lmer(leafnum_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
 anova(LL_TP4_model_biomass) #p=1.838e-10
+
+#### max leaf length TP1 Stats ####
+# check for normality #
+maxLL_Normality_test_TP1 <- lm(data = leafnum_W1_2, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(maxLL_Normality_test_TP1)
+ols_test_normality(maxLL_Normality_test_TP1) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+
+# Run simplest model, anova comparing SLA to overall_group
+MaxLL_TP1_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W1_2)
+summary(MaxLL_TP1_model) #p=0.0443
+
+#### max leaf length TP2 Stats ####
+# check for normality #
+maxLL_Normality_test_TP2 <- lm(data = leafnum_W3_5, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(maxLL_Normality_test_TP2)
+ols_test_normality(maxLL_Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+
+# Run simplest model, anova comparing SLA to overall_group
+maxLL_TP2_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W3_5)
+summary(maxLL_TP2_model) #p=0.0155
+
+#### max leaf length TP3 Stats ####
+# check for normality #
+maxLL_Normality_test_TP3 <- lm(data = leafnum_W9_18, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(maxLL_Normality_test_TP3)
+ols_test_normality(maxLL_Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option 
+
+# Run simplest model, anova comparing SLA to overall_group
+maxLL_TP3_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W9_18)
+summary(maxLL_TP3_model) #p=0.0637
+#run post hoc test
+
+#run model not using any plants that had biomass removed
+maxLL_TP3_model_noCG <- aov(maxLL_slope ~ overall_group, data = leafnum_W9_18_NCG)
+summary(maxLL_TP3_model_noCG) #p=0.0429
+
+# run model accounting for biomass removed
+maxLL_TP3_model_biomass <- lmerTest::lmer(maxLL_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
+anova(maxLL_TP3_model_biomass) #p=0.06541
+
+
+#### max leaf length TP4 Stats ####
+# check for normality #
+maxLL_Normality_test_TP4 <- lm(data = leafnum_W19_22, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(maxLL_Normality_test_TP4)
+ols_test_normality(maxLL_Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+
+#try transformations
+leafnum_W19_22 <- leafnum_W19_22 %>%
+  mutate(TF_maxLL_slope = sign(maxLL_slope) * log(1 + abs(maxLL_slope)))
+
+maxLL_Normality_test_TP4_TF <- lm(data = leafnum_W19_22, TF_maxLL_slope ~ overall_group)
+ols_plot_resid_hist(maxLL_Normality_test_TP4_TF)
+ols_test_normality(maxLL_Normality_test_TP4_TF) #### not actually better just with KS test but looks better: using these data
+
+#make transformations in leafnum_W19_22_NCG
+leafnum_W19_22_NCG <- leafnum_W19_22_NCG %>%
+  mutate(TF_maxLL_slope = sign(maxLL_slope) * log(1 + abs(maxLL_slope)))
+
+# Run simplest model, anova comparing SLA to overall_group
+maxLL_TP4_model <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W19_22)
+summary(maxLL_TP4_model) #p=0.0107
+#run post hoc test
+
+#run model not using any plants that had biomass removed
+maxLL_TP4_model_noCG <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W19_22_NCG)
+summary(maxLL_TP4_model_noCG) #p=0.00625
+
+# run model accounting for biomass removed
+maxLL_TP4_model_biomass <- lmerTest::lmer(TF_maxLL_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
+anova(maxLL_TP4_model_biomass) #p=0.01067
+
+#### max plant height TP1 Stats ####
+# check for normality #
+maxPH_Normality_test_TP1 <- lm(data = leafnum_W1_2, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(maxPH_Normality_test_TP1)
+ols_test_normality(maxPH_Normality_test_TP1) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option 
+
+# Run simplest model, anova comparing SLA to overall_group
+maxPH_TP1_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W1_2)
+summary(maxPH_TP1_model) #p=0.676
+
+#### max plant height TP2 Stats ####
+# check for normality #
+maxPH_Normality_test_TP2 <- lm(data = leafnum_W3_5, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(maxPH_Normality_test_TP2)
+ols_test_normality(maxPH_Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+
+# Run simplest model, anova comparing SLA to overall_group
+maxPH_TP2_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W3_5)
+summary(maxPH_TP2_model) #p=0.174
+
+#### max plant height TP3 Stats ####
+# check for normality #
+maxPH_Normality_test_TP3 <- lm(data = leafnum_W9_18, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(maxPH_Normality_test_TP3)
+ols_test_normality(maxPH_Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option 
+
+# Run simplest model, anova comparing SLA to overall_group
+maxPH_TP3_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W9_18)
+summary(maxPH_TP3_model) #p=0.956
+#run post hoc test
+
+#run model not using any plants that had biomass removed
+maxPH_TP3_model_noCG <- aov(maxPH_slope ~ overall_group, data = leafnum_W9_18_NCG)
+summary(maxPH_TP3_model_noCG) #p=0.675
+
+# run model accounting for biomass removed
+maxPH_TP3_model_biomass <- lmerTest::lmer(maxPH_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
+anova(maxPH_TP3_model_biomass) #p=0.9553
+
+
+#### max plant height TP4 Stats ####
+# check for normality #
+maxPH_Normality_test_TP4 <- lm(data = leafnum_W19_22, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(maxPH_Normality_test_TP4)
+ols_test_normality(maxPH_Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+
+# Run simplest model, anova comparing SLA to overall_group
+maxPH_TP4_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W19_22)
+summary(maxPH_TP4_model) #p=0.137
+#run post hoc test
+
+#run model not using any plants that had biomass removed
+maxPH_TP4_model_noCG <- aov(maxPH_slope ~ overall_group, data = leafnum_W19_22_NCG)
+summary(maxPH_TP4_model_noCG) #p=0.111
+
+# run model accounting for biomass removed
+maxPH_TP4_model_biomass <- lmerTest::lmer(maxPH_slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
+anova(maxPH_TP4_model_biomass) #p=0.1369
 
 #### Clean Up EndPoint Data ####
 
