@@ -636,7 +636,7 @@ Leaf_Data_Join_CGRemoval <- Leaf_Data_Join %>%
 
 #### Wk22 Max Leaf Length Graph ####
 
-MaxLL_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
+MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Avg Leaf Length (mm)") +
@@ -666,7 +666,7 @@ anova(MaxLL_model_biomass) #p=0.07772
 
 #### Wk22 Max Plant Height Graph ####
 
-MaxPH_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
+MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Avg Plant Height (mm)") +
@@ -694,7 +694,7 @@ anova(MaxPH_model_biomass) #p=0.001194
 
 #### Wk22 Leaf Number Graph ####
 
-Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
+Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Avg Leaf Number") +
@@ -723,7 +723,7 @@ anova(leaf_num_model_biomass) #p=2.112e-09
 
 #### Alive ANPP Graph ####
 
-Alive_ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
+Alive_ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Alive ANPP (g)") +
@@ -751,7 +751,7 @@ anova(alive_ANPP_model_biomass) #0.0003199
 
 ### Dead ANPP Graph ####
 
-Dead_ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = dead_ANPP_g, fill= overall_group)) +
+Dead_ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = dead_ANPP_g, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Dead ANPP (g)") +
@@ -780,7 +780,7 @@ anova(dead_ANPP_model_biomass) #0.01366
 
 ### Total ANPP Graph ####
 
-ANPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = total_ANPP_g, fill= overall_group)) +
+ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = total_ANPP_g, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Total ANPP (g)") +
@@ -808,7 +808,7 @@ anova(total_ANPP_model_biomass) #0.05528
 
 ### BNPP Graph ####
 
-BNPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
+BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="BNPP (g)") +
@@ -837,12 +837,12 @@ anova(BNPP_model_biomass) #0.007883
 
 ### NPP Graph ####
 
-NPP_Graph <- ggplot(NPP_Join, aes(x = overall_group, y = NPP, fill= overall_group)) +
+NPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = NPP, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Total NPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=4)+
+  expand_limits(y=c(0,4))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
@@ -867,7 +867,7 @@ anova(NPP_model_biomass) #0.009993
 
 #### SLA Graph ####
 
-SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = SLA, fill= overall_group)) +
+SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
@@ -895,12 +895,12 @@ anova(SLA_model_biomass) #p=8.0788e-06
 
 #### Leaf Thickness Graph ####
 
-LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
+LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Leaf Thickness (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=0.5)+
+  expand_limits(y=0.4)+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
@@ -923,12 +923,12 @@ anova(Thickness_model_biomass) #p=2.588e-11
 
 #### LDMC Graph ####
 
-LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = overall_group, y = LDMC, fill= overall_group)) +
+LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Leaf Dry Matter Content") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=5)+
+  expand_limits(y=1.5)+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
