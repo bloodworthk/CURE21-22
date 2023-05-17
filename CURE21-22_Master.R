@@ -120,7 +120,110 @@ Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through
 Through_Time_Join_NCG<-Through_Time_Join %>% 
   filter(biomass_removed==0)
 
-#### Through Time Relative Growth Rate Data ####
+#### Through Time Relative Growth Rate Data: one GR ####
+
+# Slope #
+
+leafnum_week1_slope <- Through_Time_Join_NCG %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "1") %>%
+  rename(survival_wk1=survival) %>% 
+  rename(leafnum_wk1 = leaf_num) %>%
+  rename(maxLL_wk1 = max_leaf_length) %>% 
+  rename(maxPH_wk1 = max_plant_height) %>% 
+  rename(week_1 = week_num)
+
+
+leafnum_week22_slope <- Through_Time_Join_NCG %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "22") %>%
+  rename(survival_wk22=survival) %>% 
+  rename(leafnum_wk22 = leaf_num) %>%
+  rename(maxLL_wk22 = max_leaf_length) %>% 
+  rename(maxPH_wk22 = max_plant_height) %>% 
+  rename(week_22 = week_num)
+
+leafnum_W1_22 <- leafnum_week1_slope %>%
+  full_join(leafnum_week22_slope) %>%
+  mutate(leafnum_slope = (leafnum_wk22 - leafnum_wk1)/21) %>%  
+  mutate(maxLL_slope = (maxLL_wk22 - maxLL_wk1)/21) %>% 
+  mutate(maxPH_slope = (maxPH_wk22 - maxPH_wk1)/21) %>% 
+  add_column(timepoint = "W1-22") %>%
+  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
+  na.omit()
+
+#### Leaf Number single GR Figure ####
+Leafnum_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = leafnum_slope, fill = overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Relative Growth Rate") +
+  expand_limits(y=c(2,2))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
+#### Leaf Number single TP GR Stats ####
+# check for normality #
+Normality_test_LeafNum <- lm(data = leafnum_W1_22, leafnum_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_LeafNum )
+ols_test_normality(Normality_test_LeafNum ) 
+
+# Run simplest model, anova comparing SLA to overall_group
+LeafNum_singleGR_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W1_22)
+summary(LeafNum_singleGR_model) #p=0.0.000144
+#post-hoc tests
+summary(glht(LeafNum_singleGR_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
+
+
+#### Max Leaf Length single GR Figure ####
+MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill = overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Relative Growth Rate") +
+  expand_limits(y=c(2,2))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
+#### max leaf length single TP GR Stats ####
+# check for normality #
+Normality_test_MaxLL <- lm(data = leafnum_W1_22, maxLL_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_MaxLL)
+ols_test_normality(Normality_test_MaxLL) 
+
+# Run simplest model, anova comparing SLA to overall_group
+MaxLL_singleGR_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W1_22)
+summary(MaxLL_singleGR_model) #p=0.0.0953
+#post hoc test
+
+#### Max Plant Height single GR Figure ####
+MaxPH_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxPH_slope, fill = overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Relative Growth Rate") +
+  expand_limits(y=c(-10,25))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+#save at 2000 x 1500
+
+#### Max Plant Height single GR Stats ####
+# check for normality #
+Normality_test_MaxPH <- lm(data = leafnum_W1_22, maxPH_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_MaxPH)
+ols_test_normality(Normality_test_MaxPH) 
+
+# Run simplest model, anova comparing SLA to overall_group
+MaxPH_singleGR_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W1_22)
+summary(MaxPH_singleGR_model) #p=0.205
+#post hoc test
+
+#### Through Time Relative Growth Rate Data: timepoints ####
   
 # Week 1-2 slope #
 
@@ -187,7 +290,6 @@ leafnum_W3_4 <- leafnum_week3 %>%
   add_column(timepoint = "W3-4") %>%
   select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
   na.omit()
-
 
 # Week 5-9 slope #
 
