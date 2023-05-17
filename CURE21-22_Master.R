@@ -117,6 +117,221 @@ Through_Time_Join<-Through_Time_Fall %>%
 #remove rows before week 9 that have biomass removal in them
 Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through_Time_Join$biomass_removed > 0), ]
 
+#### Through Time Relative Growth Rate Data ####
+  
+# Week 1-2 slope #
+
+leafnum_week1 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "1") %>%
+  rename(survival_wk1=survival) %>% 
+  rename(leafnum_wk1 = leaf_num) %>%
+  rename(maxLL_wk1 = max_leaf_length) %>% 
+  rename(maxPH_wk1 = max_plant_height) %>% 
+  rename(week_1 = week_num)
+
+
+leafnum_week2 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "2") %>%
+  rename(survival_wk2=survival) %>% 
+  rename(leafnum_wk2 = leaf_num) %>%
+  rename(maxLL_wk2 = max_leaf_length) %>% 
+  rename(maxPH_wk2 = max_plant_height) %>% 
+  rename(week_2 = week_num)
+  
+leafnum_W1_2 <- leafnum_week1 %>%
+  full_join(leafnum_week2) %>%
+  mutate(leafnum_slope = (leafnum_wk2 - leafnum_wk1)/1) %>%  #2 timepoints but the difference in x-axis (weeks) is 1
+  mutate(maxLL_slope = (maxLL_wk2 - maxLL_wk1)/1) %>% 
+  mutate(maxPH_slope = (maxPH_wk2 - maxPH_wk1)/1) %>% 
+  mutate(overall_group =ifelse(overall_group=="Control-Control", "Control",
+                        ifelse(overall_group=="Control-Heatwave", "Control",
+                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
+                        ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W1-2") %>%
+  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed)
+
+
+# Week 3-5 slope #
+leafnum_week3 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "3") %>%
+  rename(survival_wk3=survival) %>% 
+  rename(leafnum_wk3 = leaf_num) %>% 
+  rename(maxLL_wk3 = max_leaf_length) %>% 
+  rename(maxPH_wk3 = max_plant_height) %>% 
+  rename(week_3 = week_num)
+
+leafnum_week5 <- Through_Time_Final2 %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "5") %>%
+  rename(survival_wk5=survival) %>% 
+  rename(leafnum_wk5 = leaf_num) %>%
+  rename(maxLL_wk5 = max_leaf_length) %>% 
+  rename(maxPH_wk5 = max_plant_height) %>% 
+  rename(week_5 = week_num)
+
+leafnum_W3_5 <- leafnum_week3 %>%
+  full_join(leafnum_week5) %>%
+  mutate(leafnum_slope = (leafnum_wk5 - leafnum_wk3)/2) %>%  #3 timepoints but the difference in x-axis (weeks) is 2
+  mutate(maxLL_slope = (maxLL_wk5 - maxLL_wk3)/2) %>% 
+  mutate(maxPH_slope = (maxPH_wk5 - maxPH_wk3)/2) %>% 
+  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control", 
+                        ifelse(overall_group=="Control-Heatwave", "Control",
+                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
+                        ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W3-5") %>%
+  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
+  na.omit()
+
+
+# Week 9-18 slope #
+leafnum_week9 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "9") %>%
+  rename(survival_wk9 = survival) %>% 
+  rename(leafnum_wk9 = leaf_num) %>% 
+  rename(maxLL_wk9 = max_leaf_length) %>% 
+  rename(maxPH_wk9 = max_plant_height) %>% 
+  rename(week_9 = week_num)
+
+leafnum_week18 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "18") %>%
+  rename(survival_wk18 = survival) %>% 
+  rename(leafnum_wk18 = leaf_num) %>% 
+  rename(maxLL_wk18 = max_leaf_length) %>% 
+  rename(maxPH_wk18 = max_plant_height) %>% 
+  rename(week_18 = week_num)
+
+leafnum_W9_18 <- leafnum_week9 %>%
+  full_join(leafnum_week18) %>%
+  mutate(leafnum_slope = (leafnum_wk18 - leafnum_wk9)/9) %>%  #2 timepoints but the difference in x-axis (weeks) is 9 
+  mutate(maxLL_slope = (maxLL_wk18 - maxLL_wk9)/9) %>% 
+  mutate(maxPH_slope = (maxPH_wk18 - maxPH_wk9)/9) %>% 
+  mutate(overall_group =ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W9-18") %>%
+  select(overall_group, spring_plant_ID, timepoint,leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
+  na.omit()
+
+#dataframe with no crabgrass plants
+leafnum_W9_18_NCG <- leafnum_W9_18 %>%
+  filter(biomass_removed==0) 
+
+# Week 19-22 slope #
+leafnum_week19 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "19") %>%
+  rename(survival_wk19 = survival) %>% 
+  rename(leafnum_wk19 = leaf_num) %>% 
+  rename(maxLL_wk19 = max_leaf_length) %>% 
+  rename(maxPH_wk19 = max_plant_height) %>% 
+  rename(week_19 = week_num)
+
+leafnum_week22 <- Through_Time_Join %>%
+  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
+  filter(week_num == "22") %>%
+  rename(survival_wk22 = survival) %>% 
+  rename(leafnum_wk22 = leaf_num) %>% 
+  rename(maxLL_wk22 = max_leaf_length) %>% 
+  rename(maxPH_wk22 = max_plant_height) %>% 
+  rename(week_22 = week_num)
+
+leafnum_W19_22 <- leafnum_week19 %>%
+  full_join(leafnum_week22) %>%
+  mutate(leafnum_slope = (leafnum_wk22 - leafnum_wk19)/3) %>%
+  mutate(maxLL_slope = (maxLL_wk22 - maxLL_wk19)/3) %>% 
+  mutate(maxPH_slope = (maxPH_wk22 - maxPH_wk19)/3) %>% 
+  mutate(overall_group =ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
+  add_column(timepoint = "W19-22") %>%
+  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
+  na.omit()
+
+#dataframe with no crabgrass plants
+leafnum_W19_22_NCG <- leafnum_W19_22 %>%
+  filter(biomass_removed==0) 
+
+### merge all data frames together #
+finalLeafNumSlope <- leafnum_W1_2 %>% 
+  rbind(leafnum_W3_5) %>%
+  rbind(leafnum_W9_18) %>%
+  rbind(leafnum_W19_22)
+
+#### Leaf Number Figure ####
+ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-5', 'W9-18', 'W19-22')),y=leafnum_slope, fill=overall_group))+
+  geom_boxplot()
+
+
+#### Leaf Number TP1 Stats ####
+# check for normality #
+test <- lm(data = leafnum_W1_2, slope ~ overall_group)
+ols_plot_resid_hist(test)
+ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+
+# Run simplest model, anova comparing SLA to overall_group
+LL_TP1_model <- aov(slope ~ overall_group, data = leafnum_W1_2)
+summary(LL_TP1_model) #p=0.238
+#which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
+#wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
+
+
+#### Leaf Number TP2 Stats ####
+# check for normality #
+Normality_test_TP2 <- lm(data = leafnum_W3_5, slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP2)
+ols_test_normality(Normality_test_TP2) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+
+# Run simplest model, anova comparing SLA to overall_group
+LL_TP2_model <- aov(slope ~ overall_group, data = leafnum_W3_5)
+summary(LL_TP2_model) #p=0.109
+
+#### Leaf Number TP3 Stats ####
+# check for normality #
+Normality_test_TP3 <- lm(data = leafnum_W9_18, slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP3)
+ols_test_normality(Normality_test_TP3) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
+
+#try transformations
+leafnum_W9_18 <- leafnum_W9_18 %>%
+  mutate(TF_slope = sign(slope) * log(1 + abs(slope)))
+
+Normality_test_TP3_TF <- lm(data = leafnum_W9_18, TF_slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP3_TF)
+ols_test_normality(Normality_test_TP3_TF)
+
+# Run simplest model, anova comparing SLA to overall_group
+LL_TP3_model <- aov(TF_slope ~ overall_group, data = leafnum_W9_18)
+summary(LL_TP3_model) #p=0.00105
+#run post hoc test
+
+#run model not using any plants that had biomass removed
+LL_TP3_model_noCG <- aov(slope ~ overall_group, data = leafnum_W9_18_NCG)
+summary(LL_TP3_model_noCG) #p=0.00134
+
+# run model accounting for biomass removed
+LL_TP3_model_biomass <- lmerTest::lmer(slope ~ overall_group + (1 | biomass_removed), data = leafnum_W9_18)
+anova(LL_TP3_model_biomass) #p=0.001012
+
+
+#### Leaf Number TP4 Stats ####
+# check for normality #
+Normality_test_TP4 <- lm(data = leafnum_W19_22, slope ~ overall_group)
+ols_plot_resid_hist(Normality_test_TP4)
+ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
+
+# Run simplest model, anova comparing SLA to overall_group
+LL_TP4_model <- aov(TF_slope ~ overall_group, data = leafnum_W19_22)
+summary(LL_TP4_model) #p=4.13e-10
+#run post hoc test
+
+#run model not using any plants that had biomass removed
+LL_TP4_model_noCG <- aov(slope ~ overall_group, data = leafnum_W19_22_NCG)
+summary(LL_TP4_model_noCG) #p=1.76e-07
+
+# run model accounting for biomass removed
+LL_TP4_model_biomass <- lmerTest::lmer(slope ~ overall_group + (1 | biomass_removed), data = leafnum_W19_22)
+anova(LL_TP4_model_biomass) #p=1.838e-10
 
 #### Clean Up EndPoint Data ####
 
