@@ -441,6 +441,9 @@ ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.
 # Run simplest model, anova comparing SLA to overall_group
 LL_TP4_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W18_20)
 summary(LL_TP4_model) #p=4.73e-05e-10
+#post-hoc tests
+summary(glht(LL_TP4_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
+
 #run post hoc test
 
 #### Leaf Number TP5 Stats ####
@@ -453,6 +456,7 @@ ols_test_normality(Normality_test_TP5) # want all 4 p-values in output to be >0.
 LL_TP5_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W21_22)
 summary(LL_TP5_model) #p=6.03e-06
 #run post hoc test
+summary(glht(LL_TP5_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
 
 #### max leaf length Figure ####
 MaxLL_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=maxLL_slope, fill=overall_group))+
@@ -497,7 +501,7 @@ ols_plot_resid_hist(Normality_test_TP3)
 ols_test_normality(Normality_test_TP3)
 
 # Run simplest model, an ova comparing SLA to overall_group
-maxLL_TP3_model <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W5_9)
+maxLL_TP3_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W5_9)
 summary(maxLL_TP3_model) #p=0.0637
 
 #### Max Leaf Length TP4 Stats ####
@@ -507,7 +511,7 @@ ols_plot_resid_hist(Normality_test_TP4)
 ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-maxLL_TP4_model <- aov(TF_maxLL_slope ~ overall_group, data = leafnum_W18_20)
+maxLL_TP4_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W18_20)
 summary(maxLL_TP4_model) #p=0.0107
 #run post hoc test
 
@@ -565,7 +569,7 @@ ols_plot_resid_hist(Normality_test_TP3)
 ols_test_normality(Normality_test_TP3)
 
 # Run simplest model, an ova comparing SLA to overall_group
-maxPH_TP3_model <- aov(TF_maxPH_slope ~ overall_group, data = leafnum_W5_9)
+maxPH_TP3_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W5_9)
 summary(maxPH_TP3_model) #p=0.956
 
 #### Max Plant Height TP4 Stats ####
@@ -575,7 +579,7 @@ ols_plot_resid_hist(Normality_test_TP4)
 ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
 
 # Run simplest model, anova comparing SLA to overall_group
-maxPH_TP4_model <- aov(TF_maxPH_slope ~ overall_group, data = leafnum_W18_20)
+maxPH_TP4_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W18_20)
 summary(maxPH_TP4_model) #p=0.137
 #run post hoc test
 
