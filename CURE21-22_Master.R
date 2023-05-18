@@ -8,6 +8,7 @@ library(lmerTest)
 library(stringr)  
 library(multcomp)
 library(tidyverse)
+library(grid)
 
 #### Set working directory ####
 #Bloodworth:mac
@@ -952,5 +953,71 @@ summary(LDMC_model_noCG) #p=1.03e-07
 # run model accounting for biomass removed
 LDMC_model_biomass <- lmerTest::lmer(LDMC ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
 anova(LDMC_model_biomass) #p=1.433e-08
+
+#### Paper Figures ####
+
+
+#### Figure 1: Abiotics ####
+
+#### Figure 2: End Time Point ####
+
+## Max Leaf Length single GR Figure ##
+MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill = overall_group))+
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
+  expand_limits(y=c(30,-10))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+## Wk22 Max Plant Height Graph ##
+MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Average Plant Height (mm)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,400))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+## Wk22 Max Leaf Length Graph ##
+MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Average Leaf Length (mm)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,600))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
+## Wk22 Leaf Number Graph ##
+Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Average Leaf Number") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,80))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  
+
+#Create Figure
+pushViewport(viewport(layout=grid.layout(2,2)))
+print(MaxLL_GR_Graph,vp=viewport(layout.pos.row=1, layout.pos.col =1))
+print(MaxPH_Graph,vp=viewport(layout.pos.row=1, layout.pos.col =2))
+print(MaxLL_Graph,vp=viewport(layout.pos.row=2, layout.pos.col =1))
+print(Leaf_Num_Graph,vp=viewport(layout.pos.row=2, layout.pos.col =2))
+#save at 3500 x 2000
+
 
 
