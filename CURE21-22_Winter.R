@@ -1,6 +1,11 @@
 #### Winter Script for CURE 21-22 Manuscript ####
 
 
+# Ignore the jordanWIP file.
+# That code is gross and cringe
+# Also apparently this file exists. My bad.
+
+
 #### Load in packages ####
 library(githubinstall)
 library(ggplot2)
@@ -10,8 +15,7 @@ library(multcomp)
 library(tidyverse)
 
 #### Set working directory ####
-#Bloodworth:mac
-setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
+
 
 #### Update ggplot2 theme ####
 #Update ggplot2 theme - make box around the x-axis title size 30, vertically justify x-axis title to 0.35, 
@@ -19,13 +23,13 @@ setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-
 #Make the x-axis title size 30. For y-axis title, make the box size 30, put the writing at a 90 degree angle, and vertically justify the title to 0.5.  
 #Add a margin of 15 and make the y-axis text size 25. Make the plot title size 30 and vertically justify it to 2.  Do not add any grid lines.  
 #Do not add a legend title, and make the legend size 20
-theme_update(axis.title.x=element_text(size=50, vjust=-0.35, margin=margin(t=12)),
-             axis.text.x=element_text(size=50),
-             axis.title.y=element_text(size=50, angle=90, vjust=0.5, margin=margin(r=15)),
-             axis.text.y=element_text(size=50),
+theme_update(axis.title.x=element_text(size=30, vjust=0.35, margin=margin(t=15)),
+             axis.text.x=element_text(size=30),
+             axis.title.y=element_text(size=30, angle=90, vjust=.5, margin=margin(r=15)),
+             axis.text.y=element_text(size=25),
              plot.title =element_blank(),
-             legend.position = "none",
-             legend.text=element_text(size=50),
+             legend.position = "top",
+             legend.text=element_text(size=10),
              panel.grid.major = element_blank(),
              panel.grid.minor = element_blank(),
              panel.background = element_blank(),
@@ -118,7 +122,368 @@ Through_Time_Join<-Through_Time_Fall %>%
 Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through_Time_Join$biomass_removed > 0), ]
 
 
+
+######################################################
+
+library(tidyverse)
+
+###
+
+alldata <- read.csv("ALL_llp315cure_499data.csv")
+
+#Have to make that first column a character
+
+Through_Time_Join <- Through_Time_Join %>%
+  mutate(overall_group = as.character(overall_group))
+
+Through_Time_Join_Test <- Through_Time_Join %>%
+  mutate(overall_group = ifelse(week_num >= 1 & week_num <= 9, 
+                                str_extract(overall_group, "^[^-]+"), 
+                                overall_group))
+
+#### Temperature
+
+TempSubset <- Through_Time_Join_Test %>% 
+  select(overall_group,spring_plant_ID,week_num,air_temp) %>%
+  separate(spring_plant_ID,c("Day","Treatment","Plant_Number"),sep="-") %>% 
+  group_by(overall_group,week_num) %>% 
+  summarize(Air_Temp_std=sd(air_temp),Air_Temp_Mean=mean(air_temp),Air_Temp_n=length(air_temp))%>%
+  mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n)) %>% 
+  ungroup()
+
+All_TempGraph <- ggplot(TempSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=5)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=1)+
+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2)+
+  xlab("Week Number")+
+  ylab("Temperature (C)")+
+  expand_limits(y=c(10,30))
+
+# View Graph
+
+All_TempGraph
+
+### Humidity
+
+HumiditySubset <- Through_Time_Join_Test %>% 
+  select(overall_group,spring_plant_ID,week_num,humidity) %>%
+  group_by(overall_group,week_num) %>% 
+  summarize(humidity_std=sd(humidity),humidity_Mean=mean(humidity),humidity_n=length(humidity))%>%
+  mutate(humidity_St_Error=humidity_std/sqrt(humidity_n)) %>% 
+  ungroup()
+
+# Graph that bad boy
+
+All_HumidityGraph <- ggplot(HumiditySubset,aes(x=week_num, y=humidity_Mean,group=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=5)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=1)+
+  geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2)+
+  xlab("Week Number")+
+  ylab("Humidity")+
+  expand_limits(y=c(10,30))
+
+All_HumidityGraph
+
+### Soil Moisture
+
+
+SMSubset <- Through_Time_Join_Test %>% 
+  select(overall_group,spring_plant_ID,week_num,soil_moisture) %>%
+  drop_na(soil_moisture) %>% 
+  group_by(overall_group,week_num) %>% 
+  summarize(sm_std=sd(soil_moisture),sm_Mean=mean(soil_moisture),sm_n=length(soil_moisture))%>%
+  mutate(sm_St_Error=sm_std/sqrt(sm_n)) %>% 
+  ungroup()
+
+# Graph that bad boy
+
+All_SMGraph <- ggplot(SMSubset,aes(x=week_num, y=sm_Mean,group=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=5)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=1)+
+  geom_errorbar(aes(ymin=sm_Mean-sm_St_Error,ymax=sm_Mean+sm_St_Error),width=0.2)+
+  xlab("Week Number")+
+  ylab("Soil Moisture")+
+  expand_limits(y=c(10,30))
+
+All_SMGraph
+
+
+### Light
+
+LightSubset <- Through_Time_Join_Test %>% 
+  select(overall_group,spring_plant_ID,week_num,light_avail) %>%
+  drop_na(light_avail) %>% 
+  group_by(overall_group,week_num) %>% 
+  summarize(light_std=sd(light_avail),light_Mean=mean(light_avail),light_n=length(light_avail))%>%
+  mutate(light_St_Error=light_std/sqrt(light_n)) %>% 
+  ungroup()
+
+# Graph that bad boy
+
+All_LightGraph <- ggplot(LightSubset,aes(x=week_num, y=light_Mean,group=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=5)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=1)+
+  geom_errorbar(aes(ymin=light_Mean-light_St_Error,ymax=light_Mean+light_St_Error),width=0.2)+
+  xlab("Week Number")+
+  ylab("Light Availability")+
+  expand_limits(y=c(10,30))
+
+All_LightGraph
+
+#####
+# STATS
+####
+
+# Temperature
+
+your_data <- read.csv("ALL_llp315cure_499data.csv")
+
+
+
+# Create an empty list to store the test results
+test_results <- list()
+
+# Get unique week_num values in the data
+unique_weeks <- unique(your_data$week_num)
+
+# Perform Mann-Whitney test for each week_num
+for (week in unique_weeks) {
+  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  
+  # Perform Mann-Whitney test between treatments for the current week_num
+  test_result <- wilcox.test(air_temp ~ treatment, data = data_subset)
+  
+  # Store the test result in the list
+  test_results[[as.character(week)]] <- test_result
+}
+
+# Print the test results
+for (week in unique_weeks) {
+  print(paste("Week", week))
+  print(test_results[[as.character(week)]])
+}
+
+
+# Humidity
+
+your_data <- read.csv("ALL_llp315cure_499data.csv")
+
+
+
+# Create an empty list to store the test results
+test_results <- list()
+
+# Get unique week_num values in the data
+unique_weeks <- unique(your_data$week_num)
+
+# Perform Mann-Whitney test for each week_num
+for (week in unique_weeks) {
+  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  
+  # Perform Mann-Whitney test between treatments for the current week_num
+  test_result <- wilcox.test(humidity ~ treatment, data = data_subset)
+  
+  # Store the test result in the list
+  test_results[[as.character(week)]] <- test_result
+}
+
+# Print the test results
+for (week in unique_weeks) {
+  print(paste("Week", week))
+  print(test_results[[as.character(week)]])
+}
+
+
+# Soil moisture
+
+your_data <- read.csv("ALL_llp315cure_499data.csv")
+
+
+# Create an empty list to store the test results
+test_results <- list()
+
+# Get unique week_num values in the data
+unique_weeks <- unique(your_data$week_num)
+
+# Perform Mann-Whitney test for each week_num
+for (week in unique_weeks) {
+  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  
+  # Perform Mann-Whitney test between treatments for the current week_num
+  test_result <- wilcox.test(soil_moisture ~ treatment, data = data_subset)
+  
+  # Store the test result in the list
+  test_results[[as.character(week)]] <- test_result
+}
+
+# Print the test results
+for (week in unique_weeks) {
+  print(paste("Week", week))
+  print(test_results[[as.character(week)]])
+}
+
+
+# Light Avail
+
+your_data <- read.csv("ALL_llp315cure_499data.csv")
+
+
+# Create an empty list to store the test results
+test_results <- list()
+
+# Get unique week_num values in the data
+unique_weeks <- unique(your_data$week_num)
+
+# Perform Mann-Whitney test for each week_num
+for (week in unique_weeks) {
+  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  
+  # Perform Mann-Whitney test between treatments for the current week_num
+  test_result <- wilcox.test(light_avail ~ treatment, data = data_subset)
+  
+  # Store the test result in the list
+  test_results[[as.character(week)]] <- test_result
+}
+
+# Print the test results
+for (week in unique_weeks) {
+  print(paste("Week", week))
+  print(test_results[[as.character(week)]])
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #### Clean Up EndPoint Data ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Create Week 22 Data
 
@@ -476,3 +841,4 @@ summary(LDMC_model_noCG) #p=1.03e-07
 # run model accounting for biomass removed
 LDMC_model_biomass <- lmerTest::lmer(LDMC ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
 anova(LDMC_model_biomass) #p=1.433e-08
+
