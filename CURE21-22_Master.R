@@ -1001,6 +1001,7 @@ MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_l
 ## Wk22 Leaf Number Graph ##
 Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
   geom_boxplot() +
+  scale_x_discrete(labels = label_wrap(10)) +
   #create axis labels
   labs(x = "Treatment",y ="Average Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
