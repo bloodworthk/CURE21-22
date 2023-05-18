@@ -236,7 +236,7 @@ All_LightGraph
 
 # Temperature
 
-your_data <- read.csv("ALL_llp315cure_499data.csv")
+all_data <- read.csv("ALL_llp315cure_499data.csv")
 
 
 
@@ -244,11 +244,11 @@ your_data <- read.csv("ALL_llp315cure_499data.csv")
 test_results <- list()
 
 # Get unique week_num values in the data
-unique_weeks <- unique(your_data$week_num)
+unique_weeks <- unique(all_data$week_num)
 
 # Perform Mann-Whitney test for each week_num
 for (week in unique_weeks) {
-  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  data_subset <- all_data[all_data$week_num == week, ]  # Subset data for the current week_num
   
   # Perform Mann-Whitney test between treatments for the current week_num
   test_result <- wilcox.test(air_temp ~ treatment, data = data_subset)
@@ -266,7 +266,7 @@ for (week in unique_weeks) {
 
 # Humidity
 
-your_data <- read.csv("ALL_llp315cure_499data.csv")
+all_data <- read.csv("ALL_llp315cure_499data.csv")
 
 
 
@@ -274,11 +274,11 @@ your_data <- read.csv("ALL_llp315cure_499data.csv")
 test_results <- list()
 
 # Get unique week_num values in the data
-unique_weeks <- unique(your_data$week_num)
+unique_weeks <- unique(all_data$week_num)
 
 # Perform Mann-Whitney test for each week_num
 for (week in unique_weeks) {
-  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  data_subset <- your_data[all_data$week_num == week, ]  # Subset data for the current week_num
   
   # Perform Mann-Whitney test between treatments for the current week_num
   test_result <- wilcox.test(humidity ~ treatment, data = data_subset)
@@ -296,18 +296,18 @@ for (week in unique_weeks) {
 
 # Soil moisture
 
-your_data <- read.csv("ALL_llp315cure_499data.csv")
+all_data <- read.csv("ALL_llp315cure_499data.csv")
 
 
 # Create an empty list to store the test results
 test_results <- list()
 
 # Get unique week_num values in the data
-unique_weeks <- unique(your_data$week_num)
+unique_weeks <- unique(all_data$week_num)
 
 # Perform Mann-Whitney test for each week_num
 for (week in unique_weeks) {
-  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  data_subset <- all_data[all_data$week_num == week, ]  # Subset data for the current week_num
   
   # Perform Mann-Whitney test between treatments for the current week_num
   test_result <- wilcox.test(soil_moisture ~ treatment, data = data_subset)
@@ -325,18 +325,18 @@ for (week in unique_weeks) {
 
 # Light Avail
 
-your_data <- read.csv("ALL_llp315cure_499data.csv")
+all_data <- read.csv("ALL_llp315cure_499data.csv")
 
 
 # Create an empty list to store the test results
 test_results <- list()
 
 # Get unique week_num values in the data
-unique_weeks <- unique(your_data$week_num)
+unique_weeks <- unique(all_data$week_num)
 
 # Perform Mann-Whitney test for each week_num
 for (week in unique_weeks) {
-  data_subset <- your_data[your_data$week_num == week, ]  # Subset data for the current week_num
+  data_subset <- all_data[all_data$week_num == week, ]  # Subset data for the current week_num
   
   # Perform Mann-Whitney test between treatments for the current week_num
   test_result <- wilcox.test(light_avail ~ treatment, data = data_subset)
