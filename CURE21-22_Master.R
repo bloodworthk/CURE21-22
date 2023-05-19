@@ -9,6 +9,7 @@ library(stringr)
 library(multcomp)
 library(tidyverse)
 library(grid)
+library(patchwork)
 
 #### Set working directory ####
 #Bloodworth:mac
@@ -962,6 +963,9 @@ anova(LDMC_model_biomass) #p=1.433e-08
 #### Figure 2: End Time Point ####
 
 ## Max Leaf Length single GR Figure ##
+
+leafnum_W1_22$overall_group<-gsub("-"," ", leafnum_W1_22$overall_group)
+
 MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill = overall_group))+
   geom_boxplot() +
   #create axis labels
@@ -974,6 +978,9 @@ MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())
 
 ## Wk22 Max Plant Height Graph ##
+
+End_Time_Point_CGRemoval$overall_group<-gsub("-"," ", End_Time_Point_CGRemoval$overall_group)
+
 MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
@@ -1001,7 +1008,6 @@ MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_l
 ## Wk22 Leaf Number Graph ##
 Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
   geom_boxplot() +
-  scale_x_discrete(labels = label_wrap(10)) +
   #create axis labels
   labs(x = "Treatment",y ="Average Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -1013,12 +1019,66 @@ Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = le
   
 
 #Create Figure
-pushViewport(viewport(layout=grid.layout(2,2)))
-print(MaxLL_GR_Graph,vp=viewport(layout.pos.row=1, layout.pos.col =1))
-print(MaxPH_Graph,vp=viewport(layout.pos.row=1, layout.pos.col =2))
-print(MaxLL_Graph,vp=viewport(layout.pos.row=2, layout.pos.col =1))
-print(Leaf_Num_Graph,vp=viewport(layout.pos.row=2, layout.pos.col =2))
-#save at 3500 x 2000
+MaxLL_GR_Graph+
+  MaxPH_Graph+
+  MaxLL_Graph+
+  Leaf_Num_Graph+
+  plot_layout(ncol = 2,nrow = 2)
+#save at 3500 x 3000
 
 
+#### Figure 3: NPP ####
 
+#### Figure 4: Traits ####
+
+Leaf_Data_Join_CGRemoval$overall_group<-gsub("-"," ", Leaf_Data_Join_CGRemoval$overall_group)
+
+## SLA Graph ##
+
+SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=800)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+## LDMC Graph ##
+
+LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Leaf Dry Matter Content (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=1.5)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+
+## Leaf Thickness Graph ##
+
+LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Leaf Thickness (mm)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=0.4)+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
+
+#Create Figure
+SLA_Graph+
+  LDMC_Graph+
+  LeafThickness_Graph+
+  plot_layout(ncol = 1,nrow = 3)
+#save at 3500 x 3000
