@@ -46,7 +46,7 @@ Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "
 
 #read in weekly data
 Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
-  select(-c(student_name,start_time,end_time))
+  select(-c(ï..student_name,start_time,end_time))
 
 #read in end timepoint ANPP & BNPP Measurements 
 ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "numeric", "numeric", "numeric", "character")) %>% 
@@ -474,3 +474,20 @@ summary(LDMC_model_noCG) #p=1.03e-07
 # run model accounting for biomass removed
 LDMC_model_biomass <- lmerTest::lmer(LDMC ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
 anova(LDMC_model_biomass) #p=1.433e-08
+
+#### Alive/Dead Figures ####
+
+#stacked bar graph of final alive and dead by treatment - WITH percentages on bars
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") #palette
+
+survival_stacked_hasPercentage <- ggplot(data=End_Time_Point_CGRemoval %>%
+                                           count(overall_group, survival) %>% #gets counts of unique observations
+                                           group_by(overall_group) %>% # groups by treatment
+                                           mutate(percent=n/sum(n)), # finds percentage of alive and dead within each treatment to use for percentage labels
+                                         aes(overall_group, n, fill=survival)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent*100), "%")), #percentage label format
+            position=position_stack(vjust=0.5),
+            size=20) +
+  theme(legend.title=element_blank()) + #remove legend title
+  scale_fill_manual(values=c(cbPalette[3],cbPalette[7])) #set colors
