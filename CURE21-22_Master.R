@@ -608,22 +608,33 @@ End_Time_Point <- Through_Time_Join %>%
 End_Time_Point_CGRemoval <- End_Time_Point %>% 
   filter(!biomass_removed>0)
 
-#join ANPP_BNPP dataframe with plant
+Alive_Dead_Status<- End_Time_Point %>% 
+  select(overall_group,spring_plant_ID,survival) %>% 
+  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID_BiomassRemoved)
+
+#join ANPP_BNPP dataframe with plant ID and alive/dead status
 NPP_Join <- ANPP_BNPP %>%
   #join Plant data
-  full_join(PlantID_BiomassRemoved) %>%
+  full_join(Alive_Dead_Status) %>% 
+  mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   #remove any plants with NAs for Alive ANPP because they didn't get measured
   drop_na(alive_ANPP_g) %>% 
-  mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   #compute mutate step row by row
   rowwise() %>% 
   #total up the total NPP
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
-  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,biomass_removed,comments) 
+  mutate(AliveNPP=sum(c(alive_ANPP_g,BNPP_g)))
+  
+  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,biomass_removed,survival, comments) 
 
 #for models where plants with extra biomass are removed completely
 NPP_Join_CGRemoval <- NPP_Join %>% 
-  filter(!biomass_removed>0)
+  filter(!biomass_removed>0) %>% 
+  #remove all dead plants from biomass
+  filter(survival!="D") %>% 
+  mutate(ANPP_BNPP_ratio = total_ANPP_g / BNPP_g) 
+
 
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
@@ -963,9 +974,7 @@ anova(LDMC_model_biomass) #p=1.433e-08
 #### Figure 2: End Time Point ####
 
 ## Max Leaf Length single GR Figure ##
-
 leafnum_W1_22$overall_group<-gsub("-"," ", leafnum_W1_22$overall_group)
-
 MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill = overall_group))+
   geom_boxplot() +
   #create axis labels
@@ -978,9 +987,7 @@ MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())
 
 ## Wk22 Max Plant Height Graph ##
-
 End_Time_Point_CGRemoval$overall_group<-gsub("-"," ", End_Time_Point_CGRemoval$overall_group)
-
 MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
@@ -1016,7 +1023,6 @@ Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = le
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-  
 
 #Create Figure
 MaxLL_GR_Graph+
@@ -1024,17 +1030,72 @@ MaxLL_GR_Graph+
   MaxLL_Graph+
   Leaf_Num_Graph+
   plot_layout(ncol = 2,nrow = 2)
-#save at 3500 x 3000
-
+#save at 3000 x 2500
 
 #### Figure 3: NPP ####
+NPP_Join_CGRemoval$overall_group<-gsub("-"," ", NPP_Join_CGRemoval$overall_group)
+## Total ANPP:BNPP Ratio ##
+ANPP_BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = ANPP_BNPP_ratio, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Total ANPP:BNPP Ratio") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+## Total NPP Graph ##
+NPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = AliveNPP, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Total NPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+## Total Alive ANPP Graph ##
+ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Alive ANPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
+## BNPP Graph ##
+BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="BNPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
+#Create Figure
+ANPP_BNPP_Graph+
+  NPP_Graph+
+  ANPP_Graph+
+  BNPP_Graph+
+  plot_layout(ncol = 2,nrow = 2)
+#save at 3000 x 2000
 
 #### Figure 4: Traits ####
-
 Leaf_Data_Join_CGRemoval$overall_group<-gsub("-"," ", Leaf_Data_Join_CGRemoval$overall_group)
 
 ## SLA Graph ##
-
 SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
@@ -1048,7 +1109,6 @@ SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fi
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())
 
 ## LDMC Graph ##
-
 LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
@@ -1063,7 +1123,6 @@ LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, 
 
 
 ## Leaf Thickness Graph ##
-
 LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
@@ -1075,10 +1134,30 @@ LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
 
-
 #Create Figure
 SLA_Graph+
   LDMC_Graph+
   LeafThickness_Graph+
   plot_layout(ncol = 1,nrow = 3)
-#save at 3500 x 3000
+#save at 2000 x 3000
+
+#### Figure 5: Fuel Load ####
+
+## Total NPP Graph ##
+ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = NPP, fill= overall_group)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Fuel Load (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
+##### TO DO #####
+### Tests of Normality for Biotic Variables ###
+#MLL# - NOT NORMAL
+ggdensity(MLLgraphs3$avgMLL)
+ggqqplot(MLLgraphs3$avgMLL)
+shapiro.test(MLLgraphs3$avgMLL)
