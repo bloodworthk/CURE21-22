@@ -867,7 +867,7 @@ NPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = NPP, fill= ov
 #save at 2000 x 1500
 
 
-#### NPP Stats ####
+#### Total NPP Stats ####
 
 # Run simplest model, anova comparing SLA to overall_group
 NPP_model <- aov(NPP ~ overall_group, data = NPP_Join)
@@ -880,6 +880,20 @@ summary(NPP_model_noCG) #0.0101
 # run model accounting for biomass removed
 NPP_model_biomass <- lmerTest::lmer(NPP ~ overall_group + (1 | biomass_removed), data = NPP_Join)
 anova(NPP_model_biomass) #0.009993
+
+#### Total Alive NPP Stats ####
+
+#run model not using any plants that had biomass removed
+AliveNPP_model_noCG <- aov(AliveNPP ~ overall_group, data = NPP_Join_CGRemoval)
+summary(AliveNPP_model_noCG) #0.000462
+#post-hoc tests
+summary(glht(AliveNPP_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
+
+#### ANPP:BNPP Stats ####
+
+#run model not using any plants that had biomass removed
+ANPP_BNPPRatio_model_noCG <- aov(ANPP_BNPP_ratio ~ overall_group, data = NPP_Join_CGRemoval)
+summary(ANPP_BNPPRatio_model_noCG) #NS
 
 
 #### SLA Graph ####
@@ -984,33 +998,44 @@ MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=30, label = "A.", size=20)
 
 ## Wk22 Max Plant Height Graph ##
 End_Time_Point_CGRemoval$overall_group<-gsub("-"," ", End_Time_Point_CGRemoval$overall_group)
 MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Average Plant Height (mm)") +
+  labs(x = "Treatment",y ="Average Max Plant Height (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,400))+
+  expand_limits(y=c(0,800))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=800, label = "B.", size=20)+
+  annotate("text", x=1, y=700, label = "a", size=20)+
+  annotate("text", x=2, y=700, label = "b", size=20)+
+  annotate("text", x=3, y=700, label = "ab", size=20)+
+  annotate("text", x=4, y=700, label = "b", size=20)
 
 ## Wk22 Max Leaf Length Graph ##
 MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Average Leaf Length (mm)") +
+  labs(x = "Treatment",y ="Average Max Leaf Length (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,600))+
+  expand_limits(y=c(0,800))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=800, label = "C.", size=20)+
+  annotate("text", x=1, y=700, label = "a", size=20)+
+  annotate("text", x=2, y=700, label = "ab", size=20)+
+  annotate("text", x=3, y=700, label = "b", size=20)+
+  annotate("text", x=4, y=700, label = "ab", size=20)
 
 ## Wk22 Leaf Number Graph ##
 Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
@@ -1018,11 +1043,16 @@ Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = le
   #create axis labels
   labs(x = "Treatment",y ="Average Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,80))+
+  expand_limits(y=c(0,100))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=100, label = "D.", size=20)+
+  annotate("text", x=1, y=85, label = "a", size=20)+
+  annotate("text", x=2, y=85, label = "b", size=20)+
+  annotate("text", x=3, y=85, label = "c", size=20)+
+  annotate("text", x=4, y=85, label = "c", size=20)
 
 #Create Figure
 MaxLL_GR_Graph+
@@ -1030,7 +1060,7 @@ MaxLL_GR_Graph+
   MaxLL_Graph+
   Leaf_Num_Graph+
   plot_layout(ncol = 2,nrow = 2)
-#save at 3000 x 2500
+#save at 3100 x 2500
 
 #### Figure 3: NPP ####
 NPP_Join_CGRemoval$overall_group<-gsub("-"," ", NPP_Join_CGRemoval$overall_group)
@@ -1045,20 +1075,26 @@ ANPP_BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = ANPP_BN
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=4, label = "A.", size=20)
 
 ## Total NPP Graph ##
 NPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = AliveNPP, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Total NPP (g)") +
+  labs(x = "Treatment",y ="Total Alive NPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,4))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=4, label = "B.", size=20)+
+  annotate("text", x=1, y=3, label = "a", size=20)+
+  annotate("text", x=2, y=3, label = "b", size=20)+
+  annotate("text", x=3, y=3, label = "b", size=20)+
+  annotate("text", x=4, y=3, label = "b", size=20)
 
 ## Total Alive ANPP Graph ##
 ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
@@ -1070,7 +1106,12 @@ ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = alive_ANPP_g
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=4, label = "C.", size=20)+
+  annotate("text", x=1, y=3, label = "a", size=20)+
+  annotate("text", x=2, y=3, label = "b", size=20)+
+  annotate("text", x=3, y=3, label = "ab", size=20)+
+  annotate("text", x=4, y=3, label = "b", size=20)
 
 ## BNPP Graph ##
 BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
@@ -1082,7 +1123,12 @@ BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = BNPP_g, fill
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=4, label = "D.", size=20)+
+  annotate("text", x=1, y=3, label = "a", size=20)+
+  annotate("text", x=2, y=3, label = "a", size=20)+
+  annotate("text", x=3, y=3, label = "b", size=20)+
+  annotate("text", x=4, y=3, label = "ab", size=20)
 
 #Create Figure
 ANPP_BNPP_Graph+
@@ -1090,7 +1136,7 @@ ANPP_BNPP_Graph+
   ANPP_Graph+
   BNPP_Graph+
   plot_layout(ncol = 2,nrow = 2)
-#save at 3000 x 2000
+#save at 3100 x 2500
 
 #### Figure 4: Traits ####
 Leaf_Data_Join_CGRemoval$overall_group<-gsub("-"," ", Leaf_Data_Join_CGRemoval$overall_group)
@@ -1101,12 +1147,17 @@ SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fi
   #create axis labels
   labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=800)+
+  expand_limits(y=1000)+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=1000, label = "A.", size=20)+
+  annotate("text", x=1, y=900, label = "a", size=20)+
+  annotate("text", x=2, y=900, label = "b", size=20)+
+  annotate("text", x=3, y=900, label = "b", size=20)+
+  annotate("text", x=4, y=900, label = "b", size=20)
 
 ## LDMC Graph ##
 LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, fill= overall_group)) +
@@ -1114,12 +1165,17 @@ LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, 
   #create axis labels
   labs(x = "Treatment",y ="Leaf Dry Matter Content (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=1.5)+
+  expand_limits(y=2)+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=2, label = "B.", size=20)+
+  annotate("text", x=1, y=1.75, label = "a", size=20)+
+  annotate("text", x=2, y=1.75, label = "b", size=20)+
+  annotate("text", x=3, y=1.75, label = "c", size=20)+
+  annotate("text", x=4, y=1.75, label = "b", size=20)
 
 
 ## Leaf Thickness Graph ##
@@ -1128,11 +1184,16 @@ LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y
   #create axis labels
   labs(x = "Treatment",y ="Leaf Thickness (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=0.4)+
+  expand_limits(y=0.5)+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=0.5, label = "B.", size=20)+
+  annotate("text", x=1, y=0.4, label = "a", size=20)+
+  annotate("text", x=2, y=0.4, label = "b", size=20)+
+  annotate("text", x=3, y=0.4, label = "b", size=20)+
+  annotate("text", x=4, y=0.4, label = "a", size=20)
 
 #Create Figure
 SLA_Graph+
@@ -1147,13 +1208,18 @@ SLA_Graph+
 ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = NPP, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Fuel Load (g)") +
+  labs(x = "Treatment",y ="Fuel Load (g of aboveground biomass)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,4))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=1, y=3.5, label = "a", size=20)+
+  annotate("text", x=2, y=3.5, label = "ab", size=20)+
+  annotate("text", x=3, y=3.5, label = "b", size=20)+
+  annotate("text", x=4, y=3.5, label = "ab", size=20)
+#save at 2200x2000
 
 ##### TO DO #####
 ### Tests of Normality for Biotic Variables ###
