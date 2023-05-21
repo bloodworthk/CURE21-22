@@ -980,6 +980,28 @@ summary(LDMC_model_noCG) #p=1.03e-07
 LDMC_model_biomass <- lmerTest::lmer(LDMC ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
 anova(LDMC_model_biomass) #p=1.433e-08
 
+#### Alive/Dead Figures ####
+End_Time_Point_CGRemoval$overall_group<-gsub("-"," ", End_Time_Point_CGRemoval$overall_group)
+#stacked bar graph of final alive and dead by treatment - WITH percentages on bars
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") #palette
+
+ggplot(data=End_Time_Point_CGRemoval %>%
+         count(overall_group, survival) %>% #gets counts of unique observations
+         group_by(overall_group) %>% # groups by treatment
+         mutate(percent=n/sum(n)), # finds percentage of alive and dead within each treatment to use for percentage labels
+       aes(overall_group, n, fill=survival)) +
+  geom_bar(stat="identity") +
+  labs(x = "Treatment",y ="Number of Plants") +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent*100), "%")), #percentage label format
+            position=position_stack(vjust=0.5),
+            size=20) +
+  expand_limits(y=c(0,60))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(legend.title=element_blank(),legend.position = c(0.1,0.9)) + #remove legend title
+  scale_fill_manual(values=c(cbPalette[3],cbPalette[7])) #set colors
+#save at 2000x20000
+
 #### Paper Figures ####
 
 
