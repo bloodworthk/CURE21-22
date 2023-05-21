@@ -667,6 +667,10 @@ MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_l
 
 #### Wk22 Max Leaf Length Stats ####
 
+Normality_test_MLL <- lm(data = End_Time_Point, max_leaf_length  ~ overall_group)
+ols_plot_resid_hist(Normality_test_MLL)
+ols_test_normality(Normality_test_MLL)
+
 # Run simplest model, anova comparing SLA to overall_group
 MaxLL_model <- aov(max_leaf_length ~ overall_group, data = End_Time_Point)
 summary(MaxLL_model) #0.0766
@@ -697,12 +701,19 @@ MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_p
 
 #### Wk22 Max Plant Height Stats ####
 
+End_Time_Point_CGRemoval<-End_Time_Point_CGRemoval %>% 
+  mutate(max_plant_height_TF=log10(max_plant_height))
+
+Normality_test_MPH <- lm(data = End_Time_Point_CGRemoval, max_plant_height_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_MPH) #best transformed with log10 
+ols_test_normality(Normality_test_MPH)
+
 # Run simplest model, anova comparing SLA to overall_group
-MaxPH_model <- aov(max_plant_height ~ overall_group, data = End_Time_Point)
+MaxPH_model <- aov(max_plant_height_TF ~ overall_group, data = End_Time_Point)
 summary(MaxPH_model) #0.00117
 
 #run model not using any plants that had biomass removed
-MaxPH_model_noCG <- aov(max_plant_height ~ overall_group, data = End_Time_Point_CGRemoval)
+MaxPH_model_noCG <- aov(max_plant_height_TF ~ overall_group, data = End_Time_Point_CGRemoval)
 summary(MaxPH_model_noCG) #p=0.0131
 
 # run model accounting for biomass removed
@@ -1034,12 +1045,18 @@ TempGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_
   scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   xlab("Week Number")+
   ylab("Temperature (C)")+
-  expand_limits(y=c(10,40))+
-  annotate("text", x=2.2, y=40, label = "A. Air Temperature", size=20)+
+  expand_limits(y=c(10,50))+
+  annotate("text", x=2.2, y=50, label = "A. Air Temperature", size=20)+
   theme(legend.position = c(0.8,0.80),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
   #add in rectangle around heatwave
   annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x="3", y=40, label = "*", size=20)+
+  annotate("text", x="4", y=40, label = "*", size=20)+
+  annotate("text", x="18", y=28, label = "*", size=20)+
+  annotate("text", x="19", y=28, label = "*", size=20)+
+  annotate("text", x="20", y=28, label = "*", size=20)+
+  annotate("text", x="22", y=28, label = "*", size=20)
 
 #Humidity Graph
 HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+
@@ -1055,7 +1072,13 @@ HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=over
   annotate("text", x=1.6, y=100, label = "B. Humidity", size=20)+
   #add in rectangle around heatwave
   annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x="3", y=100, label = "*", size=20)+
+  annotate("text", x="4", y=100, label = "*", size=20)+
+  #annotate("text", x=18, y=28, label = "*", size=20)+
+  annotate("text", x="19", y=100, label = "*", size=20)+
+  annotate("text", x="20", y=100, label = "*", size=20)+
+  annotate("text", x="22", y=100, label = "*", size=20)
 
 #Soil Moisture
 SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,color=overall_group))+
@@ -1071,7 +1094,13 @@ SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,co
   annotate("text", x=1.9, y=20, label = "C. Soil Moisture", size=20)+
   #add in rectangle around heatwave
   annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x="3", y=15, label = "*", size=20)+
+  annotate("text", x="4", y=15, label = "*", size=20)+
+  #annotate("text", x=18, y=28, label = "*", size=20)+
+  annotate("text", x="19", y=15, label = "*", size=20)+
+  annotate("text", x="20", y=15, label = "*", size=20)+
+  annotate("text", x="22", y=15, label = "*", size=20)
 
 #Light Availability
 LightGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Light_Mean,group=overall_group,color=overall_group))+
@@ -1086,7 +1115,14 @@ LightGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Light_Mean,group=overall_gr
   expand_limits(y=c(0,40000))+
   annotate("text", x=2.2, y=40000, label = "D. Light Availability", size=20)+
   #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+             annotate("text", x="1", y=30000, label = "*", size=20)+
+             annotate("text", x="3", y=30000, label = "*", size=20)+
+             annotate("text", x="4", y=30000, label = "*", size=20)+
+             #annotate("text", x=18, y=28, label = "*", size=20)+
+             annotate("text", x="19", y=30000, label = "*", size=20)+
+             annotate("text", x="20", y=30000, label = "*", size=20)+
+             annotate("text", x="22", y=30000, label = "*", size=20)
 
 #Create Figure
 TempGraph+
