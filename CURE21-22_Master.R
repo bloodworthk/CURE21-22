@@ -1002,6 +1002,102 @@ ggplot(data=End_Time_Point_CGRemoval %>%
   scale_fill_manual(values=c(cbPalette[3],cbPalette[7])) #set colors
 #save at 2000x20000
 
+#### Abiotic Data ####
+#
+#subset data
+AbioticSubsetwk1_9 <- Through_Time_Join_NCG %>% 
+  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>% 
+  filter(week_num<=9) %>% 
+  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group)))))
+
+
+AbioticSubsetwk18_22 <- Through_Time_Join_NCG %>% 
+  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>% 
+  filter(week_num>9) 
+
+AbioticSubset<-Through_Time_Join_NCG%>% 
+  #rbind(AbioticSubsetwk18_22) %>% 
+  group_by(overall_group,week_num) %>% 
+  summarize(Air_Temp_std=sd(air_temp, na.rm = TRUE),Air_Temp_Mean=mean(air_temp, na.rm = TRUE),Air_Temp_n=length(air_temp),SM_std=sd(soil_moisture, na.rm = TRUE),SM_Mean=mean(soil_moisture, na.rm = TRUE),SM_n=length(soil_moisture),Light_std=sd(light_avail, na.rm = TRUE),Light_Mean=mean(light_avail, na.rm = TRUE),Light_n=length(light_avail),humidity_std=sd(humidity, na.rm = TRUE),humidity_Mean=mean(humidity, na.rm = TRUE),humidity_n=length(humidity)) %>%
+  mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n),SM_St_Error=SM_std/sqrt(SM_n),Light_St_Error=Light_std/sqrt(Light_n),humidity_St_Error=humidity_std/sqrt(humidity_n)) %>% 
+  ungroup()
+
+AbioticSubset$week_num<-as.factor(AbioticSubset$week_num)
+
+#Temp Graph
+TempGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_group,color=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
+  scale_shape_manual(values=c(15,0,16,1))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  xlab("Week Number")+
+  ylab("Temperature (C)")+
+  expand_limits(y=c(10,40))+
+  annotate("text", x=2.2, y=40, label = "A. Air Temperature", size=20)+
+  theme(legend.position = c(0.8,0.80),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+#Humidity Graph
+HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
+  geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
+  scale_shape_manual(values=c(15,0,16,1))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  xlab("Week Number")+
+  ylab("Humidity (%)")+
+  expand_limits(y=c(0,100))+
+  annotate("text", x=1.6, y=100, label = "B. Humidity", size=20)+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+#Soil Moisture
+SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,color=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
+  geom_errorbar(aes(ymin=SM_Mean-SM_St_Error,ymax=SM_Mean+SM_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
+  scale_shape_manual(values=c(15,0,16,1))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  xlab("Week Number")+
+  ylab("Soil Moisture (%)")+
+  expand_limits(y=c(0,20))+
+  annotate("text", x=1.9, y=20, label = "C. Soil Moisture", size=20)+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())
+
+#Light Availability
+LightGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Light_Mean,group=overall_group,color=overall_group))+
+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
+  geom_errorbar(aes(ymin=Light_Mean-Light_St_Error,ymax=Light_Mean+Light_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
+  scale_shape_manual(values=c(15,0,16,1))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  xlab("Week Number")+
+  ylab("Light Availability (lux)")+
+  expand_limits(y=c(0,40000))+
+  annotate("text", x=2.2, y=40000, label = "D. Light Availability", size=20)+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")
+
+#Create Figure
+TempGraph+
+  HumidityGraph+
+  SMGraph+
+  LightGraph+
+  plot_layout(ncol = 1,nrow = 4)
+#save at 2500 x 4000
+  
+
+
 #### Paper Figures ####
 
 
@@ -1016,7 +1112,7 @@ MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill
   #create axis labels
   labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
   expand_limits(y=c(30,-10))+
-  #change color of treatments
+  #change color of treatment
   scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
