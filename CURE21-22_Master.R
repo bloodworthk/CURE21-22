@@ -1002,7 +1002,7 @@ ggplot(data=End_Time_Point_CGRemoval %>%
   scale_fill_manual(values=c(cbPalette[3],cbPalette[7])) #set colors
 #save at 2000x20000
 
-#### Abiotic Data ####
+#### Abiotic Graphs ####
 #
 #subset data
 AbioticSubsetwk1_9 <- Through_Time_Join_NCG %>% 
@@ -1030,8 +1030,8 @@ TempGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_
   geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
   geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+
   scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,0,16,1))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  scale_shape_manual(values=c(15,16,17,18))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   xlab("Week Number")+
   ylab("Temperature (C)")+
   expand_limits(y=c(10,40))+
@@ -1047,8 +1047,8 @@ HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=over
   geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
   geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2,size=4)+
   scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,0,16,1))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  scale_shape_manual(values=c(15,16,17,18))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   xlab("Week Number")+
   ylab("Humidity (%)")+
   expand_limits(y=c(0,100))+
@@ -1063,8 +1063,8 @@ SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,co
   geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
   geom_errorbar(aes(ymin=SM_Mean-SM_St_Error,ymax=SM_Mean+SM_St_Error),width=0.2,size=4)+
   scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,0,16,1))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  scale_shape_manual(values=c(15,16,17,18))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   xlab("Week Number")+
   ylab("Soil Moisture (%)")+
   expand_limits(y=c(0,20))+
@@ -1079,8 +1079,8 @@ LightGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Light_Mean,group=overall_gr
   geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
   geom_errorbar(aes(ymin=Light_Mean-Light_St_Error,ymax=Light_Mean+Light_St_Error),width=0.2,size=4)+
   scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,0,16,1))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#CA7E77","#88A76E"))+
+  scale_shape_manual(values=c(15,16,17,18))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   xlab("Week Number")+
   ylab("Light Availability (lux)")+
   expand_limits(y=c(0,40000))+
@@ -1096,6 +1096,31 @@ TempGraph+
   plot_layout(ncol = 1,nrow = 4)
 #save at 2500 x 4000
   
+
+####Abiotic Stats ####
+#transform data
+Through_Time_Join_NCG<-Through_Time_Join_NCG %>% 
+  #mutate(air_temp_TF=log10(air_temp)) %>%  #transformation doesnt help - looks relatively normal
+  #mutate(humidity_TF=sqrt(humidity)) %>% #looks best without transformations
+  mutate(soil_moisture_TF=sqrt(soil_moisture)) %>% 
+  mutate(light_avail_TF=log10(light_avail))
+# check for normality #
+Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp) #looks best without transformations
+ols_test_normality(Normality_test_Temp) 
+
+Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
+ols_test_normality(Normality_test_humidity) 
+
+Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
+ols_test_normality(Normality_test_SM) 
+
+Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_light) #looks best log transformed
+ols_test_normality(Normality_test_light)
+
 
 
 #### Paper Figures ####
