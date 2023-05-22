@@ -1182,7 +1182,7 @@ MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill
   labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
   expand_limits(y=c(30,-10))+
   #change color of treatment
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
@@ -1390,6 +1390,7 @@ SLA_Graph+
 #save at 2000 x 3000
 
 #### Figure 5: Fuel Load ####
+Leaf_Data_Join_CGRemoval_Dead$overall_group<-gsub("-"," ", Leaf_Data_Join_CGRemoval_Dead$overall_group)
 
 ## Total NPP Graph ##
 ggplot(NPP_Join_CGRemoval_Dead, aes(x = overall_group, y = NPP, fill= overall_group)) +
