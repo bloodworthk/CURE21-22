@@ -626,7 +626,11 @@ NPP_Join <- ANPP_BNPP %>%
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
   mutate(AliveNPP=sum(c(alive_ANPP_g,BNPP_g)))
   
-  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,biomass_removed,survival, comments) 
+  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,biomass_removed,survival, comments)
+  
+  NPP_Join_CGRemoval_Dead <- NPP_Join %>% 
+    filter(!biomass_removed>0) 
+    
 
 #for models where plants with extra biomass are removed completely
 NPP_Join_CGRemoval <- NPP_Join %>% 
@@ -885,8 +889,12 @@ NPP_model <- aov(NPP ~ overall_group, data = NPP_Join)
 summary(NPP_model) #0.0172
 
 #run model not using any plants that had biomass removed
-NPP_model_noCG <- aov(NPP ~ overall_group, data = NPP_Join_CGRemoval)
+NPP_model_noCG <- aov(NPP ~ overall_group, data =   NPP_Join_CGRemoval_Dead)
 summary(NPP_model_noCG) #0.0101
+#post-hoc tests
+summary(glht(NPP_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
+
+
 
 # run model accounting for biomass removed
 NPP_model_biomass <- lmerTest::lmer(NPP ~ overall_group + (1 | biomass_removed), data = NPP_Join)
@@ -1384,7 +1392,7 @@ SLA_Graph+
 #### Figure 5: Fuel Load ####
 
 ## Total NPP Graph ##
-ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = NPP, fill= overall_group)) +
+ggplot(NPP_Join_CGRemoval_Dead, aes(x = overall_group, y = NPP, fill= overall_group)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Fuel Load (g of aboveground biomass)") +
