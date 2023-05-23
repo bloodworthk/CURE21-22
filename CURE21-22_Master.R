@@ -5,14 +5,16 @@
 library(githubinstall)
 library(ggplot2)
 library(lmerTest)
+library(lme4)
 library(stringr)  
 library(multcomp)
 library(tidyverse)
 library(grid)
+library(car)
 library(patchwork)
 
 #### Set working directory ####
-#Bloodworth:mac
+#Bloodworth: mac
 setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
 
 #### Update ggplot2 theme ####
@@ -22,19 +24,24 @@ setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-
 #Add a margin of 15 and make the y-axis text size 25. Make the plot title size 30 and vertically justify it to 2.  Do not add any grid lines.  
 #Do not add a legend title, and make the legend size 20
 theme_update(axis.title.x=element_text(size=50, vjust=-0.35, margin=margin(t=12)),
-            axis.text.x=element_text(size=50),
-            axis.title.y=element_text(size=50, angle=90, vjust=0.5, margin=margin(r=15)),
-            axis.text.y=element_text(size=50),
-            plot.title =element_blank(),
-            legend.position = "none",
-            legend.text=element_text(size=50),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            panel.background = element_blank(),
-            axis.line = element_line(colour = "black")
-            )
+             axis.text.x=element_text(size=50),
+             axis.title.y=element_text(size=50, angle=90, vjust=0.5, margin=margin(r=15)),
+             axis.text.y=element_text(size=50),
+             plot.title =element_blank(),
+             legend.position = "none",
+             legend.text=element_text(size=50),
+             panel.grid.major = element_blank(),
+             panel.grid.minor = element_blank(),
+             panel.background = element_blank(),
+             axis.line = element_line(colour = "black")
+)
 
 #### Read in Data ####
+
+#read in biomass removed data
+Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>% 
+  separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
+  select(fall_treatment, fall_day, fall_plant, overall_group, biomass_removed)
 
 #read in plant ID meta-data
 PlantID <- read.csv("plant_IDs.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "factor", "character", "factor", "factor", "factor", "factor")) %>% 
@@ -43,10 +50,6 @@ PlantID <- read.csv("plant_IDs.csv", header = TRUE, na.strings = "", colClasses 
   #remove fall P185, P190, P193 because they only contained crabgrass throughout experiment
   filter(fall_plant!="P185" & fall_plant!="P190" & fall_plant!="P193")
 
-#read in biomass removed data
-Biomass_Removed <- read.csv("removed_biomass.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "factor")) %>% 
-  separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
-  select(fall_treatment, fall_day, fall_plant, overall_group, biomass_removed)
 
 #read in weekly data
 Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings = "", colClasses = c("character", "character", "character", "character","character", "numeric", "factor", "factor", "factor", "factor", "factor","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","character")) %>% 
@@ -54,11 +57,19 @@ Through_Time <- read.csv("ALL_llp315cure_499data.csv", header = TRUE, na.strings
 
 #read in end timepoint ANPP & BNPP Measurements 
 ANPP_BNPP <- read.csv("spring2022_ANPP_BNPP.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "numeric", "numeric", "numeric", "numeric", "character")) %>% 
-  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") 
+  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID) %>% 
+  full_join(Biomass_Removed) %>% 
+  filter(is.na(biomass_removed)) %>% 
+  select(-c(notes,biomass_removed))
 
 #read in end timepoint leaf metrics
 Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.strings = "", colClasses = c("factor", "factor", "factor", "factor", "numeric", "numeric", "numeric", "numeric")) %>% 
-  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") 
+  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID) %>% 
+  full_join(Biomass_Removed) %>% 
+  filter(is.na(biomass_removed)) %>% 
+  select(-c(notes,biomass_removed))
 
 
 #### Clean Up Biomass Removed Data and add to Plant_ID####
@@ -72,6 +83,8 @@ PlantID_BiomassRemoved<-PlantID %>%
 #replace NAs with zero for biomass_removed
 PlantID_BiomassRemoved$biomass_removed[is.na(PlantID_BiomassRemoved$biomass_removed)] <- 0
 
+PlantID_BiomassRemoved<-PlantID_BiomassRemoved %>% 
+  filter(biomass_removed==0)
 
 #### Clean Up Data Through Time Data ####
 
@@ -102,1144 +115,287 @@ Through_Time_Fall<-Through_Time %>%
   separate(fall_plant_ID,c("fall_day","fall_treatment","fall_plant"), sep = "_") %>% 
   filter(fall_plant!="P185" & fall_plant!="P190" & fall_plant!="P193") %>% 
   full_join(PlantID_BiomassRemoved) %>% 
+  drop_na(biomass_removed) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  select(overall_group, week_num,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity,biomass_removed)
+  select(overall_group, week_num,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity)
 
 Through_Time_Spring<-Through_Time %>% 
   filter(spring_plant_ID!="NA") %>% 
   select(-fall_plant_ID) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
   full_join(PlantID_BiomassRemoved) %>% 
+  drop_na(biomass_removed) %>% 
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  select(overall_group, week_num,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity,biomass_removed)
+  select(overall_group, week_num,spring_plant_ID,survival,max_leaf_length,max_plant_height,leaf_num,plant_stress,soil_moisture,light_avail,air_temp,humidity)
 
 #join fall and spring through time
 Through_Time_Join<-Through_Time_Fall %>% 
   rbind(Through_Time_Spring) 
-#remove rows before week 9 that have biomass removal in them
-Through_Time_Join = Through_Time_Join[!(Through_Time_Join$week_num < 9 & Through_Time_Join$biomass_removed > 0), ]
-
-Through_Time_Join_NCG<-Through_Time_Join %>% 
-  filter(biomass_removed==0)
-
-#### Through Time Relative Growth Rate Data: one GR ####
-
-# Slope #
-
-leafnum_week1_slope <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "1") %>%
-  rename(survival_wk1=survival) %>% 
-  rename(leafnum_wk1 = leaf_num) %>%
-  rename(maxLL_wk1 = max_leaf_length) %>% 
-  rename(maxPH_wk1 = max_plant_height) %>% 
-  rename(week_1 = week_num)
-
-
-leafnum_week22_slope <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "22") %>%
-  rename(survival_wk22=survival) %>% 
-  rename(leafnum_wk22 = leaf_num) %>%
-  rename(maxLL_wk22 = max_leaf_length) %>% 
-  rename(maxPH_wk22 = max_plant_height) %>% 
-  rename(week_22 = week_num)
-
-leafnum_W1_22 <- leafnum_week1_slope %>%
-  full_join(leafnum_week22_slope) %>%
-  mutate(leafnum_slope = (leafnum_wk22 - leafnum_wk1)/21) %>%  
-  mutate(maxLL_slope = (maxLL_wk22 - maxLL_wk1)/21) %>% 
-  mutate(maxPH_slope = (maxPH_wk22 - maxPH_wk1)/21) %>% 
-  add_column(timepoint = "W1-22") %>%
-  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
-  na.omit()
-
-#### Leaf Number single GR Figure ####
-Leafnum_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = leafnum_slope, fill = overall_group))+
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Relative Growth Rate") +
-  expand_limits(y=c(2,2))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### Leaf Number single TP GR Stats ####
-# check for normality #
-Normality_test_LeafNum <- lm(data = leafnum_W1_22, leafnum_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_LeafNum )
-ols_test_normality(Normality_test_LeafNum ) 
-
-# Run simplest model, anova comparing SLA to overall_group
-LeafNum_singleGR_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W1_22)
-summary(LeafNum_singleGR_model) #p=0.0.000144
-#post-hoc tests
-summary(glht(LeafNum_singleGR_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
-
-
-#### Max Leaf Length single GR Figure ####
-MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill = overall_group))+
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Relative Growth Rate") +
-  expand_limits(y=c(2,2))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### max leaf length single TP GR Stats ####
-# check for normality #
-Normality_test_MaxLL <- lm(data = leafnum_W1_22, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_MaxLL)
-ols_test_normality(Normality_test_MaxLL) 
-
-# Run simplest model, anova comparing SLA to overall_group
-MaxLL_singleGR_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W1_22)
-summary(MaxLL_singleGR_model) #p=0.0.0953
-#post hoc test
-
-#### Max Plant Height single GR Figure ####
-MaxPH_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxPH_slope, fill = overall_group))+
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Relative Growth Rate") +
-  expand_limits(y=c(-10,25))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### Max Plant Height single GR Stats ####
-# check for normality #
-Normality_test_MaxPH <- lm(data = leafnum_W1_22, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_MaxPH)
-ols_test_normality(Normality_test_MaxPH) 
-
-# Run simplest model, anova comparing SLA to overall_group
-MaxPH_singleGR_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W1_22)
-summary(MaxPH_singleGR_model) #p=0.205
-#post hoc test
-
-#### Through Time Relative Growth Rate Data: timepoints ####
-  
-# Week 1-2 slope #
-
-leafnum_week1 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "1") %>%
-  rename(survival_wk1=survival) %>% 
-  rename(leafnum_wk1 = leaf_num) %>%
-  rename(maxLL_wk1 = max_leaf_length) %>% 
-  rename(maxPH_wk1 = max_plant_height) %>% 
-  rename(week_1 = week_num)
-
-
-leafnum_week2 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "2") %>%
-  rename(survival_wk2=survival) %>% 
-  rename(leafnum_wk2 = leaf_num) %>%
-  rename(maxLL_wk2 = max_leaf_length) %>% 
-  rename(maxPH_wk2 = max_plant_height) %>% 
-  rename(week_2 = week_num)
-  
-leafnum_W1_2 <- leafnum_week1 %>%
-  full_join(leafnum_week2) %>%
-  mutate(leafnum_slope = (leafnum_wk2 - leafnum_wk1)/1) %>%  #2 timepoints but the difference in x-axis (weeks) is 1
-  mutate(maxLL_slope = (maxLL_wk2 - maxLL_wk1)/1) %>% 
-  mutate(maxPH_slope = (maxPH_wk2 - maxPH_wk1)/1) %>% 
-  mutate(overall_group =ifelse(overall_group=="Control-Control", "Control",
-                        ifelse(overall_group=="Control-Heatwave", "Control",
-                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
-                        ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
-  add_column(timepoint = "W1-2") %>%
-  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed)
-
-
-# Week 3-4 slope #
-leafnum_week3 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "3") %>%
-  rename(survival_wk3=survival) %>% 
-  rename(leafnum_wk3 = leaf_num) %>% 
-  rename(maxLL_wk3 = max_leaf_length) %>% 
-  rename(maxPH_wk3 = max_plant_height) %>% 
-  rename(week_3 = week_num)
-
-leafnum_week4 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "4") %>%
-  rename(survival_wk4=survival) %>% 
-  rename(leafnum_wk4 = leaf_num) %>%
-  rename(maxLL_wk4 = max_leaf_length) %>% 
-  rename(maxPH_wk4 = max_plant_height) %>% 
-  rename(week_4 = week_num)
-
-leafnum_W3_4 <- leafnum_week3 %>%
-  full_join(leafnum_week4) %>%
-  mutate(leafnum_slope = (leafnum_wk4 - leafnum_wk3)/1) %>%  #3 timepoints but the difference in x-axis (weeks) is 2
-  mutate(maxLL_slope = (maxLL_wk4 - maxLL_wk3)/1) %>% 
-  mutate(maxPH_slope = (maxPH_wk4 - maxPH_wk3)/1) %>% 
-  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control", 
-                        ifelse(overall_group=="Control-Heatwave", "Control",
-                        ifelse(overall_group=="Heatwave-Control", "Heatwave",
-                        ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
-  add_column(timepoint = "W3-4") %>%
-  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
-  na.omit()
-
-# Week 5-9 slope #
-
-leafnum_week5 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "5") %>%
-  rename(survival_wk5=survival) %>% 
-  rename(leafnum_wk5 = leaf_num) %>%
-  rename(maxLL_wk5 = max_leaf_length) %>% 
-  rename(maxPH_wk5 = max_plant_height) %>% 
-  rename(week_5 = week_num)
-
-leafnum_week9 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "9") %>%
-  rename(survival_wk9 = survival) %>% 
-  rename(leafnum_wk9 = leaf_num) %>% 
-  rename(maxLL_wk9 = max_leaf_length) %>% 
-  rename(maxPH_wk9 = max_plant_height) %>% 
-  rename(week_9 = week_num)
-
-leafnum_W5_9 <- leafnum_week5 %>%
-  full_join(leafnum_week9) %>%
-  mutate(leafnum_slope = (leafnum_wk9 - leafnum_wk5)/4) %>%  #2 timepoints but the difference in x-axis (weeks) is 9 
-  mutate(maxLL_slope = (maxLL_wk9 - maxLL_wk5)/4) %>% 
-  mutate(maxPH_slope = (maxPH_wk9 - maxPH_wk5)/4) %>% 
-  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group))))) %>%
-  add_column(timepoint = "W5-9") %>%
-  select(overall_group, spring_plant_ID, timepoint,leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
-  na.omit()
-
-
-# Week 18-20 slope #
-
-leafnum_week18 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "18") %>%
-  rename(survival_wk18 = survival) %>% 
-  rename(leafnum_wk18 = leaf_num) %>% 
-  rename(maxLL_wk18 = max_leaf_length) %>% 
-  rename(maxPH_wk18 = max_plant_height) %>% 
-  rename(week_18 = week_num)
-
-leafnum_week20 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "20") %>%
-  rename(survival_wk20 = survival) %>% 
-  rename(leafnum_wk20 = leaf_num) %>% 
-  rename(maxLL_wk20 = max_leaf_length) %>% 
-  rename(maxPH_wk20 = max_plant_height) %>% 
-  rename(week_20 = week_num)
-
-leafnum_W18_20 <- leafnum_week18 %>%
-  full_join(leafnum_week20) %>%
-  mutate(leafnum_slope = (leafnum_wk20 - leafnum_wk18)/2) %>%  #2 timepoints but the difference in x-axis (weeks) is 9 
-  mutate(maxLL_slope = (maxLL_wk20 - maxLL_wk18)/2) %>% 
-  mutate(maxPH_slope = (maxPH_wk20 - maxPH_wk18)/2) %>% 
-  add_column(timepoint = "W18-20") %>%
-  select(overall_group, spring_plant_ID, timepoint,leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
-  na.omit()
-
-# Week 21-22 slope #
-leafnum_week21 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "21") %>%
-  rename(survival_wk21 = survival) %>% 
-  rename(leafnum_wk21 = leaf_num) %>% 
-  rename(maxLL_wk21 = max_leaf_length) %>% 
-  rename(maxPH_wk21 = max_plant_height) %>% 
-  rename(week_21 = week_num)
-
-leafnum_week22 <- Through_Time_Join_NCG %>%
-  dplyr::select(-c(soil_moisture, light_avail, air_temp, humidity,plant_stress)) %>%
-  filter(week_num == "22") %>%
-  rename(survival_wk22 = survival) %>% 
-  rename(leafnum_wk22 = leaf_num) %>% 
-  rename(maxLL_wk22 = max_leaf_length) %>% 
-  rename(maxPH_wk22 = max_plant_height) %>% 
-  rename(week_22 = week_num)
-
-leafnum_W21_22 <- leafnum_week21 %>%
-  full_join(leafnum_week22) %>%
-  mutate(leafnum_slope = (leafnum_wk22 - leafnum_wk21)/1) %>%
-  mutate(maxLL_slope = (maxLL_wk22 - maxLL_wk21)/1) %>% 
-  mutate(maxPH_slope = (maxPH_wk22 - maxPH_wk21)/1) %>% 
-  add_column(timepoint = "W21-22") %>%
-  select(overall_group, spring_plant_ID, timepoint, leafnum_slope, maxLL_slope,maxPH_slope,biomass_removed) %>% 
-  na.omit()
-
-### merge all data frames together #
-finalLeafNumSlope <- leafnum_W1_2 %>% 
-  rbind(leafnum_W3_4) %>%
-  rbind(leafnum_W5_9) %>%
-  rbind(leafnum_W18_20) %>%
-  rbind(leafnum_W21_22)
-
-#### Leaf Number Figure ####
-Leafnum_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=leafnum_slope, fill=overall_group))+
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Timepoint",y ="Relative Growth Rate") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(-100,50))+
-  #change color of treatments
-  scale_fill_manual(values=c("#76AFE8", "#76AFE8","#E6E291","#CA7E77","#88A76E","#CA7E77")) +
-  scale_x_discrete(breaks=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22'),
-                   labels=c("Pre HW", "HW1", "R1","HW2", "R2"))
-#save at 2000 x 1500
-
-#### Leaf Number TP1 Stats ####
-# check for normality #
-Normality_test_TP1 <- lm(data = leafnum_W1_2, leafnum_slope ~ overall_group)
-ols_plot_resid_hist(test)
-ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
-
-# Run simplest model, anova comparing SLA to overall_group
-LL_TP1_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W1_2)
-summary(LL_TP1_model) #p=0.238
-#which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
-#wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
-
-
-#### Leaf Number TP2 Stats ####
-# check for normality #
-Normality_test_TP2 <- lm(data = leafnum_W3_4, leafnum_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP2)
-ols_test_normality(Normality_test_TP2) 
-
-# Run simplest model, anova comparing SLA to overall_group
-LL_TP2_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W3_4)
-summary(LL_TP2_model) #p=0.124
-
-#### Leaf Number TP3 Stats ####
-# check for normality #
-Normality_test_TP3 <- lm(data = leafnum_W5_9, leafnum_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP3)
-ols_test_normality(Normality_test_TP3)
-
-# Run simplest model, an ova comparing SLA to overall_group
-LL_TP3_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W5_9)
-summary(LL_TP3_model) #p=0.911
-
-#### Leaf Number TP4 Stats ####
-# check for normality #
-Normality_test_TP4 <- lm(data = leafnum_W18_20, leafnum_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP4)
-ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
-
-# Run simplest model, anova comparing SLA to overall_group
-LL_TP4_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W18_20)
-summary(LL_TP4_model) #p=4.73e-05e-10
-#post-hoc tests
-summary(glht(LL_TP4_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
-
-#run post hoc test
-
-#### Leaf Number TP5 Stats ####
-# check for normality #
-Normality_test_TP5 <- lm(data = leafnum_W21_22, leafnum_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP5)
-ols_test_normality(Normality_test_TP5) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
-
-# Run simplest model, anova comparing SLA to overall_group
-LL_TP5_model <- aov(leafnum_slope ~ overall_group, data = leafnum_W21_22)
-summary(LL_TP5_model) #p=6.03e-06
-#run post hoc test
-summary(glht(LL_TP5_model, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
-
-#### max leaf length Figure ####
-MaxLL_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=maxLL_slope, fill=overall_group))+
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Timepoint",y ="Relative Growth Rate") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(-200,200))+
-  #change color of treatments
-  scale_fill_manual(values=c("#76AFE8", "#76AFE8","#E6E291","#CA7E77","#88A76E","#CA7E77")) +
-  scale_x_discrete(breaks=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22'),
-                   labels=c("Pre HW", "HW1", "R1","HW2", "R2"))
-#save at 2000 x 1500
-
-#### Max Leaf Length TP1 Stats ####
-# check for normality #
-Normality_test_TP1 <- lm(data = leafnum_W1_2, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(test)
-ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
-
-# Run simplest model, anova comparing SLA to overall_group
-maxLL_TP1_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W1_2)
-summary(maxLL_TP1_model) #p=0.0443
-#which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
-#wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
-
-
-#### Max Leaf Length TP2 Stats ####
-# check for normality #
-Normality_test_TP2 <- lm(data = leafnum_W3_4, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP2)
-ols_test_normality(Normality_test_TP2) 
-
-# Run simplest model, anova comparing SLA to overall_group
-maxLL_TP2_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W3_4)
-summary(maxLL_TP2_model) #p=0.858
-
-#### Max Leaf Length TP3 Stats ####
-# check for normality #
-Normality_test_TP3 <- lm(data = leafnum_W5_9, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP3)
-ols_test_normality(Normality_test_TP3)
-
-# Run simplest model, an ova comparing SLA to overall_group
-maxLL_TP3_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W5_9)
-summary(maxLL_TP3_model) #p=0.0637
-
-#### Max Leaf Length TP4 Stats ####
-# check for normality #
-Normality_test_TP4 <- lm(data = leafnum_W18_20, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP4)
-ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
-
-# Run simplest model, anova comparing SLA to overall_group
-maxLL_TP4_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W18_20)
-summary(maxLL_TP4_model) #p=0.0107
-#run post hoc test
-
-#### Max Leaf Length TP5 Stats ####
-# check for normality #
-Normality_test_TP5 <- lm(data = leafnum_W21_22, maxLL_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP5)
-ols_test_normality(Normality_test_TP5) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
-
-# Run simplest model, anova comparing SLA to overall_group
-maxLL_TP5_model <- aov(maxLL_slope ~ overall_group, data = leafnum_W21_22)
-summary(maxLL_TP5_model) #p=0.691
-#run post hoc test
-
-#### max plant height Figure ####
-MaxPH_TPs_Graph<-ggplot(finalLeafNumSlope,aes(x=factor(timepoint, level=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22')),y=maxPH_slope, fill=overall_group))+
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Timepoint",y ="Relative Growth Rate") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(-200,200))+
-  #change color of treatments
-  scale_fill_manual(values=c("#76AFE8", "#76AFE8","#E6E291","#CA7E77","#88A76E","#CA7E77")) +
-  scale_x_discrete(breaks=c('W1-2', 'W3-4', 'W5-9', 'W18-20','W21-22'),
-                   labels=c("Pre HW", "HW1", "R1","HW2", "R2"))
-#save at 2000 x 1500
-
-#### Max Plant Height TP1 Stats ####
-# check for normality #
-Normality_test_TP1 <- lm(data = leafnum_W1_2, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(test)
-ols_test_normality(test) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option with one test being above 0.05
-
-# Run simplest model, anova comparing SLA to overall_group
-maxPH_TP1_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W1_2)
-summary(maxPH_TP1_model) #p=0.676
-#which one? using anova for now since it's what we use for the rest of the data & wilcox test gives same results
-#wilcox.test(leafnum_W1_2$slope~leafnum_W1_2$overall_group) #0.297
-
-
-#### Max Plant Height TP2 Stats ####
-# check for normality #
-Normality_test_TP2 <- lm(data = leafnum_W3_4, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP2)
-ols_test_normality(Normality_test_TP2) 
-
-# Run simplest model, anova comparing SLA to overall_group
-maxPH_TP2_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W3_4)
-summary(maxPH_TP2_model) #p=0.268
-
-#### Max Plant Height TP3 Stats ####
-# check for normality #
-Normality_test_TP3 <- lm(data = leafnum_W5_9, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP3)
-ols_test_normality(Normality_test_TP3)
-
-# Run simplest model, an ova comparing SLA to overall_group
-maxPH_TP3_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W5_9)
-summary(maxPH_TP3_model) #p=0.956
-
-#### Max Plant Height TP4 Stats ####
-# check for normality #
-Normality_test_TP4 <- lm(data = leafnum_W18_20, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP4)
-ols_test_normality(Normality_test_TP4) # want all 4 p-values in output to be >0.05 for normality, we tried to transform the data but non-transformed data was the best option
-
-# Run simplest model, anova comparing SLA to overall_group
-maxPH_TP4_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W18_20)
-summary(maxPH_TP4_model) #p=0.137
-#run post hoc test
-
-#### Max Plant Height TP5 Stats ####
-# check for normality #
-Normality_test_TP5 <- lm(data = leafnum_W21_22, maxPH_slope ~ overall_group)
-ols_plot_resid_hist(Normality_test_TP5)
-ols_test_normality(Normality_test_TP5) 
-
-# Run simplest model, anova comparing SLA to overall_group
-maxPH_TP5_model <- aov(maxPH_slope ~ overall_group, data = leafnum_W21_22)
-summary(maxPH_TP5_model) #p=0.054
-#run post hoc test
 
 #### Clean Up EndPoint Data ####
-
 # Create Week 22 Data
-
 End_Time_Point <- Through_Time_Join %>% 
   filter(week_num=="22") %>% 
-  select(-c(week_num,soil_moisture,light_avail,air_temp,humidity))
+  select(-c(week_num,soil_moisture,light_avail,air_temp,humidity)) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group))))) %>% 
+  filter(survival=="A")
+End_Time_Point$treatment<-as.factor(End_Time_Point$treatment)
 
-#for models where plants with extra biomass are removed completely
-End_Time_Point_CGRemoval <- End_Time_Point %>% 
-  filter(!biomass_removed>0)
-
-Alive_Dead_Status<- End_Time_Point %>% 
-  select(overall_group,spring_plant_ID,survival) %>% 
+#Create dataframe with alive and dead information
+Alive_Dead_Status<- Through_Time_Join %>% 
+  filter(week_num=="22") %>% 
+  select(-c(week_num,soil_moisture,light_avail,air_temp,humidity)) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group))))) %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
-  full_join(PlantID_BiomassRemoved)
+  full_join(PlantID_BiomassRemoved) %>% 
+  drop_na(biomass_removed) 
+Alive_Dead_Status$treatment<-as.factor(Alive_Dead_Status$treatment)
 
 #join ANPP_BNPP dataframe with plant ID and alive/dead status
-NPP_Join <- ANPP_BNPP %>%
+NPP_Join <- Alive_Dead_Status %>%
   #join Plant data
-  full_join(Alive_Dead_Status) %>% 
+  left_join(ANPP_BNPP) %>%  
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   #remove any plants with NAs for Alive ANPP because they didn't get measured
-  drop_na(alive_ANPP_g) %>% 
+  drop_na(alive_ANPP_g) %>% ##### look into why there are so many NAs#####
   #compute mutate step row by row
   rowwise() %>% 
   #total up the total NPP
-  mutate(NPP = sum(c(total_ANPP_g, BNPP_g))) %>% 
-  mutate(AliveNPP=sum(c(alive_ANPP_g,BNPP_g)))
-  
-  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,biomass_removed,survival, comments)
-  
-  NPP_Join_CGRemoval_Dead <- NPP_Join %>% 
-    filter(!biomass_removed>0) 
-    
+  mutate(NPP = sum(c(total_ANPP_g, BNPP_g,rm.na=TRUE))) %>% 
+  mutate(AliveNPP=sum(c(alive_ANPP_g,BNPP_g,rm.na=TRUE))) %>% 
+  select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,survival, comments) %>% 
+  mutate(ANPP_BNPP_ratio = total_ANPP_g / BNPP_g, rm.na=TRUE) 
 
-#for models where plants with extra biomass are removed completely
-NPP_Join_CGRemoval <- NPP_Join %>% 
-  filter(!biomass_removed>0) %>% 
+#make dataframe with only live plants
+NPP_Join_Alive <- NPP_Join %>% 
   #remove all dead plants from biomass
-  filter(survival!="D") %>% 
-  mutate(ANPP_BNPP_ratio = total_ANPP_g / BNPP_g) 
+  filter(survival!="D")
 
+#### Clean Leaf Trait Data ####
 
 #join leaf data with plantID
 Leaf_Data_Join <- Leaf_Data %>%
   #remove plants with no leaf data
   drop_na(wet_leaf_weight) %>% 
   full_join(PlantID_BiomassRemoved) %>%
-  drop_na(leaf_number) %>% 
+  drop_na(leaf_number) %>% ##### look into why there are so many NAs#####
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
-  mutate(LDMC = dry_leaf_weight / wet_leaf_weight) %>%
-  mutate(SLA = leaf_area / dry_leaf_weight) %>% 
-  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness,SLA,LDMC,biomass_removed)
+  mutate(LDMC = dry_leaf_weight / wet_leaf_weight,na.rm=TRUE) %>%
+  mutate(SLA = leaf_area / dry_leaf_weight,na.rm=TRUE) %>% 
+  select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness,SLA,LDMC)%>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group)))))
+Leaf_Data_Join$treatment<-as.factor(Leaf_Data_Join$treatment)
 
-#for models where plants with extra biomass are removed completely
-Leaf_Data_Join_CGRemoval <- Leaf_Data_Join %>% 
-  filter(!biomass_removed>0)
+#### Growth Rate Calculations ####
+#Create Growth Rate by calculating slope of each week across plant individuals
+#control-control
+Control_Control_Slopes<-lmList(max_leaf_length~week_num|spring_plant_ID,data=subset(Through_Time_Join,overall_group=="Control-Control"))
+#convert to dataframe
+Control_Control_Slopes_DF<-coef(Control_Control_Slopes)
+Control_Control_Slopes_DF2 <- tibble::rownames_to_column(Control_Control_Slopes_DF, "spring_plant_ID") %>% 
+  rename(slope=week_num) %>% 
+  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID_BiomassRemoved) %>% 
+  filter(overall_group=="Control-Control")
 
-#### Wk22 Max Leaf Length Graph ####
+#heatwave-control
+heatwave_control_Slopes<-lmList(max_leaf_length~week_num|spring_plant_ID,data=subset(Through_Time_Join,overall_group=="Heatwave-Control"))
+#convert to dataframe
+heatwave_control_Slopes_DF<-coef(heatwave_control_Slopes)
+heatwave_control_Slopes_DF2 <- tibble::rownames_to_column(heatwave_control_Slopes_DF, "spring_plant_ID") %>% 
+  rename(slope=week_num) %>% 
+  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID_BiomassRemoved) %>% 
+  filter(overall_group=="Heatwave-Control")
 
-MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Avg Leaf Length (mm)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=600)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
+#control-heatwave
+control_heatwave_Slopes<-lmList(max_leaf_length~week_num|spring_plant_ID,data=subset(Through_Time_Join,overall_group=="Control-Heatwave"))
+#convert to dataframe
+control_heatwave_Slopes_DF<-coef(control_heatwave_Slopes)
+control_heatwave_Slopes_DF2 <- tibble::rownames_to_column(control_heatwave_Slopes_DF, "spring_plant_ID") %>% 
+  rename(slope=week_num) %>% 
+separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID_BiomassRemoved) %>% 
+  filter(overall_group=="Control-Heatwave")
 
-#### Wk22 Max Leaf Length Stats ####
+#heatwave-heatwave
+heatwave_heatwave_Slopes<-lmList(max_leaf_length~week_num|spring_plant_ID,data=subset(Through_Time_Join,overall_group=="Heatwave-Heatwave"))
+#convert to dataframe
+heatwave_heatwave_Slopes_DF<-coef(heatwave_heatwave_Slopes)
+heatwave_heatwave_Slopes_DF2 <- tibble::rownames_to_column(heatwave_heatwave_Slopes_DF, "spring_plant_ID") %>% 
+  rename(slope=week_num) %>% 
+  separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
+  full_join(PlantID_BiomassRemoved) %>% 
+  filter(overall_group=="Heatwave-Heatwave")
+  
+#Merge all growth rate slope dataframes
+MaxLL_Slopes<-Control_Control_Slopes_DF2 %>% 
+  rbind(heatwave_control_Slopes_DF2) %>% 
+  rbind(control_heatwave_Slopes_DF2) %>% 
+  rbind(heatwave_heatwave_Slopes_DF2) %>% 
+  filter(slope>0) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group)))))
+MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes)
 
-Normality_test_MLL <- lm(data = End_Time_Point, max_leaf_length  ~ overall_group)
+#### Figure 2: End Time Point Stats ####
+
+## max leaf length single TP GR Stats ##
+
+# check for normality #
+#non transformed data
+Normality_test_MaxLL <- lm(data = MaxLL_Slopes, slope ~ treatment)
+ols_plot_resid_hist(Normality_test_MaxLL)
+ols_test_normality(Normality_test_MaxLL)
+#transform data
+MaxLL_Slopes <-MaxLL_Slopes %>% 
+  mutate(slope_TF=sqrt(slope))
+# check for normality of transformed data#
+Normality_test_MaxLL_TF <- lm(data = MaxLL_Slopes, slope_TF ~ treatment)
+ols_plot_resid_hist(Normality_test_MaxLL_TF)
+ols_test_normality(Normality_test_MaxLL_TF) #data transformed 
+
+#check for homoscedascity
+leveneTest(slope_TF ~ treatment, data = MaxLL_Slopes) #p = 0.923 so > 0.05 so equal variance is met
+
+# Run anova comparing slopes to overall_group
+MaxLL_GR_model <- aov(slope_TF ~ treatment, data = MaxLL_Slopes)
+summary(MaxLL_GR_model) #p=0.281
+
+## max plant height stats ##
+
+# check for normality #
+#non transformed data
+Normality_test_MPH <- lm(data = End_Time_Point, max_plant_height  ~ treatment)
+ols_plot_resid_hist(Normality_test_MPH)
+ols_test_normality(Normality_test_MPH)
+#transform data
+End_Time_Point<-End_Time_Point %>% 
+  mutate(max_plant_height_TF=log10(max_plant_height))
+#check normality of transformed data
+Normality_test_MPH_TF <- lm(data = End_Time_Point, max_plant_height_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_MPH_TF) 
+ols_test_normality(Normality_test_MPH_TF) #best transformed with log10 
+
+#check for homoscedascity
+leveneTest(max_plant_height_TF ~ treatment, data = End_Time_Point) #p = 0.2341 so > 0.05 so equal variance is met
+
+#run model 
+MaxPH_model <- aov(max_plant_height_TF ~ treatment, data = End_Time_Point)
+summary(MaxPH_model) #p=0.0022
+summary(glht(MaxPH_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+## max leaf length stats ##
+
+# check for normality #
+#non transformed data
+Normality_test_MLL <- lm(data = End_Time_Point, max_leaf_length  ~ treatment)
 ols_plot_resid_hist(Normality_test_MLL)
 ols_test_normality(Normality_test_MLL)
-
-# Run simplest model, anova comparing SLA to overall_group
-MaxLL_model <- aov(max_leaf_length ~ overall_group, data = End_Time_Point)
-summary(MaxLL_model) #0.0766
-
-#run model not using any plants that had biomass removed
-MaxLL_model_noCG <- aov(max_leaf_length ~ overall_group, data = End_Time_Point_CGRemoval)
-summary(MaxLL_model_noCG) #p=0.0393
-#post-hoc tests
-summary(glht(MaxLL_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
-
-# run model accounting for biomass removed
-MaxLL_model_biomass <- lmerTest::lmer(max_leaf_length ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
-anova(MaxLL_model_biomass) #p=0.07772
-
-#### Wk22 Max Plant Height Graph ####
-
-MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Avg Plant Height (mm)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=400)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### Wk22 Max Plant Height Stats ####
-
-End_Time_Point_CGRemoval<-End_Time_Point_CGRemoval %>% 
-  mutate(max_plant_height_TF=log10(max_plant_height))
-
-Normality_test_MPH <- lm(data = End_Time_Point_CGRemoval, max_plant_height_TF  ~ overall_group)
-ols_plot_resid_hist(Normality_test_MPH) #best transformed with log10 
-ols_test_normality(Normality_test_MPH)
-
-# Run simplest model, anova comparing SLA to overall_group
-MaxPH_model <- aov(max_plant_height_TF ~ overall_group, data = End_Time_Point)
-summary(MaxPH_model) #0.00117
-
-#run model not using any plants that had biomass removed
-MaxPH_model_noCG <- aov(max_plant_height_TF ~ overall_group, data = End_Time_Point_CGRemoval)
-summary(MaxPH_model_noCG) #p=0.0131
-
-# run model accounting for biomass removed
-MaxPH_model_biomass <- lmerTest::lmer(max_plant_height ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
-anova(MaxPH_model_biomass) #p=0.001194
-
-#### Wk22 Leaf Number Graph ####
-
-Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Avg Leaf Number") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=80)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-
-#### Wk22 Leaf Number Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-leaf_num_model <- aov(leaf_num ~ overall_group, data = End_Time_Point)
-summary(leaf_num_model) #2.0e-09
-
-#run model not using any plants that had biomass removed
-leaf_num_model_noCG <- aov(leaf_num ~ overall_group, data = End_Time_Point_CGRemoval)
-summary(leaf_num_model_noCG) #p=2.48e-09
-
-# run model accounting for biomass removed
-leaf_num_model_biomass <- lmerTest::lmer(leaf_num ~ overall_group + (1 | biomass_removed), data = End_Time_Point)
-anova(leaf_num_model_biomass) #p=2.112e-09
-
-#### Alive ANPP Graph ####
-
-Alive_ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Alive ANPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=2)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### Alive ANPP Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-alive_ANPP_model <- aov(alive_ANPP_g ~ overall_group, data = NPP_Join)
-summary(alive_ANPP_model) #0.000334
-
-#run model not using any plants that had biomass removed
-alive_ANPP_model_noCG <- aov(alive_ANPP_g~ overall_group, data = NPP_Join_CGRemoval)
-summary(alive_ANPP_model_noCG) #0.00767
-
-# run model accounting for biomass removed
-alive_ANPP_model_biomass <- lmerTest::lmer(alive_ANPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
-anova(alive_ANPP_model_biomass) #0.0003199
-
-### Dead ANPP Graph ####
-
-Dead_ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = dead_ANPP_g, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Dead ANPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=2)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-
-#### Dead ANPP Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-dead_ANPP_model <- aov(dead_ANPP_g ~ overall_group, data = NPP_Join)
-summary(dead_ANPP_model) #0.0492
-
-#run model not using any plants that had biomass removed
-dead_ANPP_model_noCG <- aov(dead_ANPP_g~ overall_group, data = NPP_Join_CGRemoval)
-summary(dead_ANPP_model_noCG) #0.0271
-
-# run model accounting for biomass removed
-dead_ANPP_model_biomass <- lmerTest::lmer(dead_ANPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
-anova(dead_ANPP_model_biomass) #0.01366
-
-### Total ANPP Graph ####
-
-ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = total_ANPP_g, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Total ANPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=3)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### Total ANPP Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-total_ANPP_model <- aov(total_ANPP_g ~ overall_group, data = NPP_Join)
-summary(total_ANPP_model) #0.0929
-
-#run model not using any plants that had biomass removed
-total_ANPP_model_noCG <- aov(total_ANPP_g~ overall_group, data = NPP_Join_CGRemoval)
-summary(total_ANPP_model_noCG) #0.051
-
-# run model accounting for biomass removed
-total_ANPP_model_biomass <- lmerTest::lmer(total_ANPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
-anova(total_ANPP_model_biomass) #0.05528
-
-### BNPP Graph ####
-
-BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="BNPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=2)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-
-#### BNPP Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-BNPP_model <- aov(BNPP_g ~ overall_group, data = NPP_Join)
-summary(BNPP_model) #0.00897
-
-#run model not using any plants that had biomass removed
-BNPP_model_noCG <- aov(BNPP_g~ overall_group, data = NPP_Join_CGRemoval)
-summary(BNPP_model_noCG) #0.0119
-
-# run model accounting for biomass removed
-BNPP_model_biomass <- lmerTest::lmer(BNPP_g ~ overall_group + (1 | biomass_removed), data = NPP_Join)
-anova(BNPP_model_biomass) #0.007883
-
-### NPP Graph ####
-
-NPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = NPP, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Total NPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-
-#### Total NPP Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-NPP_model <- aov(NPP ~ overall_group, data = NPP_Join)
-summary(NPP_model) #0.0172
-
-#run model not using any plants that had biomass removed
-NPP_model_noCG <- aov(NPP ~ overall_group, data =   NPP_Join_CGRemoval_Dead)
-summary(NPP_model_noCG) #0.0101
-#post-hoc tests
-summary(glht(NPP_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
-
-
-
-# run model accounting for biomass removed
-NPP_model_biomass <- lmerTest::lmer(NPP ~ overall_group + (1 | biomass_removed), data = NPP_Join)
-anova(NPP_model_biomass) #0.009993
-
-#### Total Alive NPP Stats ####
-
-#run model not using any plants that had biomass removed
-AliveNPP_model_noCG <- aov(AliveNPP ~ overall_group, data = NPP_Join_CGRemoval)
-summary(AliveNPP_model_noCG) #0.000462
-#post-hoc tests
-summary(glht(AliveNPP_model_noCG, linfct = mcp(overall_group = "Tukey")), test = adjusted(type = "BH")) 
-
-#### ANPP:BNPP Stats ####
-
-#run model not using any plants that had biomass removed
-ANPP_BNPPRatio_model_noCG <- aov(ANPP_BNPP_ratio ~ overall_group, data = NPP_Join_CGRemoval)
-summary(ANPP_BNPPRatio_model_noCG) #NS
-
-
-#### SLA Graph ####
-
-SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=800)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### SLA Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-SLA_model <- aov(SLA ~ overall_group, data = Leaf_Data_Join)
-summary(SLA_model) #1.1e-05
-
-#run model not using any plants that had biomass removed
-SLA_model_noCG <- aov(SLA ~ overall_group, data = Leaf_Data_Join_CGRemoval)
-summary(SLA_model_noCG) #p=0.00234
-
-# run model accounting for biomass removed
-SLA_model_biomass <- lmerTest::lmer(SLA ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
-anova(SLA_model_biomass) #p=8.0788e-06
-
-#### Leaf Thickness Graph ####
-
-LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Leaf Thickness (mm)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=0.4)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### Leaf Thickness Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-Thickness_model <- aov(leaf_thickness ~ overall_group, data = Leaf_Data_Join)
-summary(Thickness_model) #2.72e-13
-
-#run model not using any plants that had biomass removed
-Thickness_model_noCG <- aov(leaf_thickness ~ overall_group, data = Leaf_Data_Join_CGRemoval)
-summary(Thickness_model_noCG) #p=1.32e-05
-
-# run model accounting for biomass removed
-Thickness_model_biomass <- lmerTest::lmer(leaf_thickness ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
-anova(Thickness_model_biomass) #p=2.588e-11
-
-#### LDMC Graph ####
-
-LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Leaf Dry Matter Content") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=1.5)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
-#save at 2000 x 1500
-
-#### LDMC Stats ####
-
-# Run simplest model, anova comparing SLA to overall_group
-LDMC_model <- aov(LDMC ~ overall_group, data = Leaf_Data_Join)
-summary(LDMC_model) #3.68e-07
-
-#run model not using any plants that had biomass removed
-LDMC_model_noCG <- aov(LDMC ~ overall_group, data = Leaf_Data_Join_CGRemoval)
-summary(LDMC_model_noCG) #p=1.03e-07
-
-# run model accounting for biomass removed
-LDMC_model_biomass <- lmerTest::lmer(LDMC ~ overall_group + (1 | biomass_removed), data = Leaf_Data_Join)
-anova(LDMC_model_biomass) #p=1.433e-08
-
-#### Alive/Dead Figures ####
-End_Time_Point_CGRemoval$overall_group<-gsub("-"," ", End_Time_Point_CGRemoval$overall_group)
-#stacked bar graph of final alive and dead by treatment - WITH percentages on bars
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") #palette
-
-ggplot(data=End_Time_Point_CGRemoval %>%
-         count(overall_group, survival) %>% #gets counts of unique observations
-         group_by(overall_group) %>% # groups by treatment
-         mutate(percent=n/sum(n)), # finds percentage of alive and dead within each treatment to use for percentage labels
-       aes(overall_group, n, fill=survival)) +
-  geom_bar(stat="identity") +
-  labs(x = "Treatment",y ="Number of Plants") +
-  geom_text(aes(label=paste0(sprintf("%1.1f", percent*100), "%")), #percentage label format
-            position=position_stack(vjust=0.5),
-            size=20) +
-  expand_limits(y=c(0,60))+
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(legend.title=element_blank(),legend.position = c(0.1,0.9)) + #remove legend title
-  scale_fill_manual(values=c(cbPalette[3],cbPalette[7])) #set colors
-#save at 2000x20000
-
-#### Abiotic Graphs ####
-#
-#subset data
-AbioticSubsetwk1_9 <- Through_Time_Join_NCG %>% 
-  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>% 
-  filter(week_num<=9) %>% 
-  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group)))))
-
-
-AbioticSubsetwk18_22 <- Through_Time_Join_NCG %>% 
-  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>% 
-  filter(week_num>9) 
-
-AbioticSubset<-Through_Time_Join_NCG%>% 
-  #rbind(AbioticSubsetwk18_22) %>% 
-  group_by(overall_group,week_num) %>% 
-  summarize(Air_Temp_std=sd(air_temp, na.rm = TRUE),Air_Temp_Mean=mean(air_temp, na.rm = TRUE),Air_Temp_n=length(air_temp),SM_std=sd(soil_moisture, na.rm = TRUE),SM_Mean=mean(soil_moisture, na.rm = TRUE),SM_n=length(soil_moisture),Light_std=sd(light_avail, na.rm = TRUE),Light_Mean=mean(light_avail, na.rm = TRUE),Light_n=length(light_avail),humidity_std=sd(humidity, na.rm = TRUE),humidity_Mean=mean(humidity, na.rm = TRUE),humidity_n=length(humidity)) %>%
-  mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n),SM_St_Error=SM_std/sqrt(SM_n),Light_St_Error=Light_std/sqrt(Light_n),humidity_St_Error=humidity_std/sqrt(humidity_n)) %>% 
-  ungroup()
-
-AbioticSubset$week_num<-as.factor(AbioticSubset$week_num)
-
-#Temp Graph
-TempGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_group,color=overall_group))+
-  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
-  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
-  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+
-  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,16,17,18))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
-  xlab("Week Number")+
-  ylab("Temperature (C)")+
-  expand_limits(y=c(10,50))+
-  annotate("text", x=2.2, y=50, label = "A. Air Temperature", size=20)+
-  theme(legend.position = c(0.8,0.80),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
-  #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x="3", y=40, label = "*", size=20)+
-  annotate("text", x="4", y=40, label = "*", size=20)+
-  annotate("text", x="18", y=28, label = "*", size=20)+
-  annotate("text", x="19", y=28, label = "*", size=20)+
-  annotate("text", x="20", y=28, label = "*", size=20)+
-  annotate("text", x="22", y=28, label = "*", size=20)
-
-#Humidity Graph
-HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+
-  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
-  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
-  geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2,size=4)+
-  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,16,17,18))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
-  xlab("Week Number")+
-  ylab("Humidity (%)")+
-  expand_limits(y=c(0,100))+
-  annotate("text", x=1.6, y=100, label = "B. Humidity", size=20)+
-  #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x="3", y=100, label = "*", size=20)+
-  annotate("text", x="4", y=100, label = "*", size=20)+
-  #annotate("text", x=18, y=28, label = "*", size=20)+
-  annotate("text", x="19", y=100, label = "*", size=20)+
-  annotate("text", x="20", y=100, label = "*", size=20)+
-  annotate("text", x="22", y=100, label = "*", size=20)
-
-#Soil Moisture
-SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,color=overall_group))+
-  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
-  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
-  geom_errorbar(aes(ymin=SM_Mean-SM_St_Error,ymax=SM_Mean+SM_St_Error),width=0.2,size=4)+
-  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,16,17,18))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
-  xlab("Week Number")+
-  ylab("Soil Moisture (%)")+
-  expand_limits(y=c(0,20))+
-  annotate("text", x=1.9, y=20, label = "C. Soil Moisture", size=20)+
-  #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x="3", y=15, label = "*", size=20)+
-  annotate("text", x="4", y=15, label = "*", size=20)+
-  #annotate("text", x=18, y=28, label = "*", size=20)+
-  annotate("text", x="19", y=15, label = "*", size=20)+
-  annotate("text", x="20", y=15, label = "*", size=20)+
-  annotate("text", x="22", y=15, label = "*", size=20)
-
-#Light Availability
-LightGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Light_Mean,group=overall_group,color=overall_group))+
-  geom_point(aes(color=overall_group,shape=overall_group),size=15)+
-  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+
-  geom_errorbar(aes(ymin=Light_Mean-Light_St_Error,ymax=Light_Mean+Light_St_Error),width=0.2,size=4)+
-  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
-  scale_shape_manual(values=c(15,16,17,18))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
-  xlab("Week Number")+
-  ylab("Light Availability (lux)")+
-  expand_limits(y=c(0,40000))+
-  annotate("text", x=2.2, y=40000, label = "D. Light Availability", size=20)+
-  #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-             annotate("text", x="1", y=30000, label = "*", size=20)+
-             annotate("text", x="3", y=30000, label = "*", size=20)+
-             annotate("text", x="4", y=30000, label = "*", size=20)+
-             #annotate("text", x=18, y=28, label = "*", size=20)+
-             annotate("text", x="19", y=30000, label = "*", size=20)+
-             annotate("text", x="20", y=30000, label = "*", size=20)+
-             annotate("text", x="22", y=30000, label = "*", size=20)
-
-#Create Figure
-TempGraph+
-  HumidityGraph+
-  SMGraph+
-  LightGraph+
-  plot_layout(ncol = 1,nrow = 4)
-#save at 2500 x 4000
-  
-
-####Abiotic Stats ####
 #transform data
-Through_Time_Join_NCG<-Through_Time_Join_NCG %>% 
-  #mutate(air_temp_TF=log10(air_temp)) %>%  #transformation doesnt help - looks relatively normal
-  #mutate(humidity_TF=sqrt(humidity)) %>% #looks best without transformations
-  mutate(soil_moisture_TF=sqrt(soil_moisture)) %>% 
-  mutate(light_avail_TF=log10(light_avail))
+End_Time_Point<-End_Time_Point %>% 
+  mutate(max_leaf_length_TF=sqrt(max_leaf_length))
+#check normality of transformed data
+Normality_test_MLL_TF <- lm(data = End_Time_Point, max_leaf_length_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_MLL_TF) 
+ols_test_normality(Normality_test_MLL_TF) #best transformed with squareroot 
+
+#check for homoscedascity
+leveneTest(max_leaf_length_TF ~ treatment, data = End_Time_Point) #p = 0.2429 so > 0.05 so equal variance is met
+
+#run model 
+MaxLL_model <- aov(max_leaf_length_TF ~ treatment, data = End_Time_Point)
+summary(MaxLL_model) #p=0.0337
+summary(glht(MaxLL_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+## leaf number stats ##
+
 # check for normality #
-Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_group)
-ols_plot_resid_hist(Normality_test_Temp) #looks best without transformations
-ols_test_normality(Normality_test_Temp) 
+#non transformed data
+Normality_test_LeafNum <- lm(data = End_Time_Point, leaf_num  ~ treatment)
+ols_plot_resid_hist(Normality_test_LeafNum) 
+ols_test_normality(Normality_test_LeafNum)
+#transform data
+End_Time_Point<-End_Time_Point %>% 
+  mutate(leaf_num_TF=sqrt(leaf_num))
+#check normality of transformed data
+Normality_test_LeafNum_TF <- lm(data = End_Time_Point, leaf_num_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_LeafNum_TF) 
+ols_test_normality(Normality_test_LeafNum_TF) #best transformed with sqrt 
 
-Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
-ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
-ols_test_normality(Normality_test_humidity) 
+#check for homoscedascity
+leveneTest(leaf_num_TF ~ treatment, data = End_Time_Point) #p = 0.9065 so > 0.05 so equal variance is met
 
-Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
-ols_test_normality(Normality_test_SM) 
+#run model 
+leaf_num_model <- aov(leaf_num ~ treatment, data = End_Time_Point)
+summary(leaf_num_model) #p=2.48e-09 
+summary(glht(leaf_num_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)
-ols_plot_resid_hist(Normality_test_light) #looks best log transformed
-ols_test_normality(Normality_test_light)
+#### Figure 2: End Time Point Figure ####
 
-
-
-#### Paper Figures ####
-
-
-#### Figure 1: Abiotics ####
-
-#### Figure 2: End Time Point ####
-
-## Max Leaf Length single GR Figure ##
-leafnum_W1_22$overall_group<-gsub("-"," ", leafnum_W1_22$overall_group)
-MaxLL_GR_Graph<-ggplot(leafnum_W1_22,aes(x = overall_group,y = maxLL_slope, fill = overall_group))+
+## Figure 2A. End Time Point Max Leaf Length Growth Rate Figure ##
+MaxLL_Slopes$treatment<-gsub("-"," ", MaxLL_Slopes$treatment)
+MaxLL_GR_Graph<-ggplot(MaxLL_Slopes,aes(x = treatment,y = slope, fill = treatment))+
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
-  expand_limits(y=c(30,-10))+
-  #change color of treatment
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77"))+
-  #wrap text for x axis ticks using stringr package
+  expand_limits(y=c(0,30))+
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
   annotate("text", x=0.6, y=30, label = "A.", size=20)
 
-## Wk22 Max Plant Height Graph ##
-End_Time_Point_CGRemoval$overall_group<-gsub("-"," ", End_Time_Point_CGRemoval$overall_group)
-MaxPH_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_plant_height, fill= overall_group)) +
+## Figure 2B. End Timepoint Max Plant Height Graph ##
+End_Time_Point$treatment<-gsub("-"," ", End_Time_Point$treatment)
+MaxPH_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_plant_height, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Average Max Plant Height (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,800))+
   #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
   annotate("text", x=0.6, y=800, label = "B.", size=20)+
   annotate("text", x=1, y=700, label = "a", size=20)+
-  annotate("text", x=2, y=700, label = "b", size=20)+
-  annotate("text", x=3, y=700, label = "ab", size=20)+
+  annotate("text", x=2, y=700, label = "ab", size=20)+
+  annotate("text", x=3, y=700, label = "b", size=20)+
   annotate("text", x=4, y=700, label = "b", size=20)
 
 ## Wk22 Max Leaf Length Graph ##
-MaxLL_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = max_leaf_length, fill= overall_group)) +
+MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Average Max Leaf Length (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,800))+
   #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   annotate("text", x=0.6, y=800, label = "C.", size=20)+
   annotate("text", x=1, y=700, label = "a", size=20)+
-  annotate("text", x=2, y=700, label = "ab", size=20)+
-  annotate("text", x=3, y=700, label = "b", size=20)+
+  annotate("text", x=2, y=700, label = "b", size=20)+
+  annotate("text", x=3, y=700, label = "ab", size=20)+
   annotate("text", x=4, y=700, label = "ab", size=20)
 
 ## Wk22 Leaf Number Graph ##
-Leaf_Num_Graph <- ggplot(End_Time_Point_CGRemoval, aes(x = overall_group, y = leaf_num, fill= overall_group)) +
+Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = leaf_num, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
   labs(x = "Treatment",y ="Average Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,100))+
   #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   annotate("text", x=0.6, y=100, label = "D.", size=20)+
   annotate("text", x=1, y=85, label = "a", size=20)+
   annotate("text", x=2, y=85, label = "b", size=20)+
   annotate("text", x=3, y=85, label = "c", size=20)+
-  annotate("text", x=4, y=85, label = "c", size=20)
+  annotate("text", x=4, y=85, label = "b", size=20)
 
 #Create Figure
 MaxLL_GR_Graph+
@@ -1247,171 +403,5 @@ MaxLL_GR_Graph+
   MaxLL_Graph+
   Leaf_Num_Graph+
   plot_layout(ncol = 2,nrow = 2)
-#save at 3100 x 2500
+#save at 3500 x 2500
 
-#### Figure 3: NPP ####
-NPP_Join_CGRemoval$overall_group<-gsub("-"," ", NPP_Join_CGRemoval$overall_group)
-## Total ANPP:BNPP Ratio ##
-ANPP_BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = ANPP_BNPP_ratio, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Total ANPP:BNPP Ratio") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=4, label = "A.", size=20)
-
-## Total NPP Graph ##
-NPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = AliveNPP, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Total Alive NPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=4, label = "B.", size=20)+
-  annotate("text", x=1, y=3, label = "a", size=20)+
-  annotate("text", x=2, y=3, label = "b", size=20)+
-  annotate("text", x=3, y=3, label = "b", size=20)+
-  annotate("text", x=4, y=3, label = "b", size=20)
-
-## Total Alive ANPP Graph ##
-ANPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = alive_ANPP_g, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Alive ANPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=4, label = "C.", size=20)+
-  annotate("text", x=1, y=3, label = "a", size=20)+
-  annotate("text", x=2, y=3, label = "b", size=20)+
-  annotate("text", x=3, y=3, label = "ab", size=20)+
-  annotate("text", x=4, y=3, label = "b", size=20)
-
-## BNPP Graph ##
-BNPP_Graph <- ggplot(NPP_Join_CGRemoval, aes(x = overall_group, y = BNPP_g, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="BNPP (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=4, label = "D.", size=20)+
-  annotate("text", x=1, y=3, label = "a", size=20)+
-  annotate("text", x=2, y=3, label = "a", size=20)+
-  annotate("text", x=3, y=3, label = "b", size=20)+
-  annotate("text", x=4, y=3, label = "ab", size=20)
-
-#Create Figure
-ANPP_BNPP_Graph+
-  NPP_Graph+
-  ANPP_Graph+
-  BNPP_Graph+
-  plot_layout(ncol = 2,nrow = 2)
-#save at 3100 x 2500
-
-#### Figure 4: Traits ####
-Leaf_Data_Join_CGRemoval$overall_group<-gsub("-"," ", Leaf_Data_Join_CGRemoval$overall_group)
-
-## SLA Graph ##
-SLA_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = SLA, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=1000)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=1000, label = "A.", size=20)+
-  annotate("text", x=1, y=900, label = "a", size=20)+
-  annotate("text", x=2, y=900, label = "b", size=20)+
-  annotate("text", x=3, y=900, label = "b", size=20)+
-  annotate("text", x=4, y=900, label = "b", size=20)
-
-## LDMC Graph ##
-LDMC_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = LDMC, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Leaf Dry Matter Content (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=2)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=2, label = "B.", size=20)+
-  annotate("text", x=1, y=1.75, label = "a", size=20)+
-  annotate("text", x=2, y=1.75, label = "b", size=20)+
-  annotate("text", x=3, y=1.75, label = "c", size=20)+
-  annotate("text", x=4, y=1.75, label = "b", size=20)
-
-
-## Leaf Thickness Graph ##
-LeafThickness_Graph <- ggplot(Leaf_Data_Join_CGRemoval, aes(x = overall_group, y = leaf_thickness, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Leaf Thickness (mm)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=0.5)+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=0.5, label = "B.", size=20)+
-  annotate("text", x=1, y=0.4, label = "a", size=20)+
-  annotate("text", x=2, y=0.4, label = "b", size=20)+
-  annotate("text", x=3, y=0.4, label = "b", size=20)+
-  annotate("text", x=4, y=0.4, label = "a", size=20)
-
-#Create Figure
-SLA_Graph+
-  LDMC_Graph+
-  LeafThickness_Graph+
-  plot_layout(ncol = 1,nrow = 3)
-#save at 2000 x 3000
-
-#### Figure 5: Fuel Load ####
-Leaf_Data_Join_CGRemoval_Dead$overall_group<-gsub("-"," ", Leaf_Data_Join_CGRemoval_Dead$overall_group)
-
-## Total NPP Graph ##
-ggplot(NPP_Join_CGRemoval_Dead, aes(x = overall_group, y = NPP, fill= overall_group)) +
-  geom_boxplot() +
-  #create axis labels
-  labs(x = "Treatment",y ="Fuel Load (g of aboveground biomass)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#E6E291","#88A76E","#CA7E77")) +
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=1, y=3.5, label = "a", size=20)+
-  annotate("text", x=2, y=3.5, label = "ab", size=20)+
-  annotate("text", x=3, y=3.5, label = "b", size=20)+
-  annotate("text", x=4, y=3.5, label = "ab", size=20)
-#save at 2200x2000
-
-##### TO DO #####
-### Tests of Normality for Biotic Variables ###
-#MLL# - NOT NORMAL
-ggdensity(MLLgraphs3$avgMLL)
-ggqqplot(MLLgraphs3$avgMLL)
-shapiro.test(MLLgraphs3$avgMLL)
