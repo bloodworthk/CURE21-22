@@ -164,12 +164,16 @@ NPP_Join <- Alive_Dead_Status %>%
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g,rm.na=TRUE))) %>% 
   mutate(AliveNPP=sum(c(alive_ANPP_g,BNPP_g,rm.na=TRUE))) %>% 
   select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,survival, comments) %>% 
-  mutate(ANPP_BNPP_ratio = total_ANPP_g / BNPP_g, rm.na=TRUE) 
+  mutate(ANPP_BNPP_ratio = total_ANPP_g / BNPP_g) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group))))) 
+NPP_Join$treatment<-as.factor(NPP_Join$treatment)
 
 #make dataframe with only live plants
 NPP_Join_Alive <- NPP_Join %>% 
   #remove all dead plants from biomass
-  filter(survival!="D")
+  filter(survival!="D") %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group)))))
+NPP_Join_Alive$treatment<-as.factor(NPP_Join_Alive$treatment)
 
 #### Clean Leaf Trait Data ####
 
@@ -405,3 +409,237 @@ MaxLL_GR_Graph+
   plot_layout(ncol = 2,nrow = 2)
 #save at 3500 x 2500
 
+#### Figure 3: NPP Stats ####
+
+## ANPP:BNPP Ratio ##
+
+# check for normality #
+#non transformed data
+Normality_test_Ratio <- lm(data = NPP_Join_Alive, ANPP_BNPP_ratio  ~ treatment)
+ols_plot_resid_hist(Normality_test_Ratio) 
+ols_test_normality(Normality_test_Ratio)
+#transform data
+NPP_Join_Alive<-NPP_Join_Alive %>% 
+  mutate(ANPP_BNPP_ratio_TF=sqrt(ANPP_BNPP_ratio))
+#check normality of transformed data
+Normality_test_Ratio_TF <- lm(data = NPP_Join_Alive, ANPP_BNPP_ratio_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_Ratio_TF) 
+ols_test_normality(Normality_test_Ratio_TF)#best transformed with sqrt 
+
+#check for homoscedascity
+leveneTest(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive) #p = 0.90668 so > 0.05 so equal variance is met
+
+#run model 
+ANPP_BNPP_ratio_model <- aov(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive)
+summary(ANPP_BNPP_ratio_model) #p=0.729 
+
+## Total Alive NPP Ratio ##
+
+# check for normality #
+#non transformed data
+Normality_test_AliveNPP <- lm(data = NPP_Join_Alive, AliveNPP  ~ treatment)
+ols_plot_resid_hist(Normality_test_AliveNPP) 
+ols_test_normality(Normality_test_AliveNPP) #normal
+
+#check for homoscedascity
+leveneTest(AliveNPP ~ treatment, data = NPP_Join_Alive) #p = 0.2072 so > 0.05 so equal variance is met
+
+#run model 
+AliveNPP_model <- aov(AliveNPP ~ treatment, data = NPP_Join_Alive)
+summary(AliveNPP_model) #p=0.000462
+summary(glht(AliveNPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+## Alive ANPP ##
+
+# check for normality #
+#non transformed data
+Normality_test_Alive_ANPP <- lm(data = NPP_Join_Alive, alive_ANPP_g  ~ treatment)
+ols_plot_resid_hist(Normality_test_Alive_ANPP) 
+ols_test_normality(Normality_test_Alive_ANPP)
+#transform data
+NPP_Join_Alive<-NPP_Join_Alive %>% 
+  mutate(alive_ANPP_g_TF=sqrt(alive_ANPP_g))
+#check normality of transformed data
+Normality_test_Alive_ANPP_TF <- lm(data = NPP_Join_Alive, alive_ANPP_g_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_Alive_ANPP_TF) 
+ols_test_normality(Normality_test_Alive_ANPP_TF)#best transformed with sqrt 
+
+#check for homoscedascity
+leveneTest(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.09243 so > 0.05 so equal variance is met
+
+#run model 
+Alive_ANPP_model <- aov(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive)
+summary(Alive_ANPP_model) #p=0.00218
+summary(glht(Alive_ANPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+## BNPP ##
+
+# check for normality #
+#non transformed data
+Normality_test_BNPP <- lm(data = NPP_Join_Alive, BNPP_g  ~ treatment)
+ols_plot_resid_hist(Normality_test_BNPP) 
+ols_test_normality(Normality_test_BNPP) 
+#transform data
+NPP_Join_Alive<-NPP_Join_Alive %>% 
+  mutate(BNPP_g_TF=log10(BNPP_g))
+#check normality of transformed data
+Normality_test_BNPP_TF <- lm(data = NPP_Join_Alive, BNPP_g_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_BNPP_TF) 
+ols_test_normality(Normality_test_BNPP_TF)#best transformed with log
+
+#check for homoscedascity
+leveneTest(BNPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.06383 so > 0.05 so equal variance is met
+
+#run model 
+BNPP_model <- aov(BNPP_g_TF ~ treatment, data = NPP_Join_Alive)
+summary(BNPP_model) #p=0.000477
+summary(glht(BNPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+#### Figure 3: NPP Figure ####
+NPP_Join_Alive$treatment<-gsub("-"," ", NPP_Join_Alive$treatment)
+## Total ANPP:BNPP Ratio ##
+ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Total ANPP:BNPP Ratio (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=4, label = "A.", size=20)
+
+## Total NPP Graph ##
+NPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = AliveNPP, fill= treatment)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Total Alive NPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=4, label = "B.", size=20)+
+  annotate("text", x=1, y=3.8, label = "a", size=20)+
+  annotate("text", x=2, y=3.8, label = "b", size=20)+
+  annotate("text", x=3, y=3.8, label = "b", size=20)+
+  annotate("text", x=4, y=3.8, label = "b", size=20)
+
+## Total Alive ANPP Graph ##
+ANPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = alive_ANPP_g, fill= treatment)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Alive ANPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=4, label = "C.", size=20)+
+  annotate("text", x=1, y=3, label = "a", size=20)+
+  annotate("text", x=2, y=3, label = "ab", size=20)+
+  annotate("text", x=3, y=3, label = "c", size=20)+
+  annotate("text", x=4, y=3, label = "bc", size=20)
+
+## BNPP Graph ##
+BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = BNPP_g, fill= treatment)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="BNPP (g)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,4))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=4, label = "D.", size=20)+
+  annotate("text", x=1, y=3, label = "a", size=20)+
+  annotate("text", x=2, y=3, label = "b", size=20)+
+  annotate("text", x=3, y=3, label = "a", size=20)+
+  annotate("text", x=4, y=3, label = "ab", size=20)
+
+#Create Figure
+ANPP_BNPP_Graph+
+  NPP_Graph+
+  ANPP_Graph+
+  BNPP_Graph+
+  plot_layout(ncol = 2,nrow = 2)
+#save at 3500 x 2500
+
+#### Figure 4: Trait Stats ####
+
+## SLA  ##
+
+# check for normality #
+#non transformed data
+Normality_test_SLA <- lm(data = Leaf_Data_Join, SLA  ~ treatment)
+ols_plot_resid_hist(Normality_test_SLA) 
+ols_test_normality(Normality_test_SLA)
+#transform data
+Leaf_Data_Join<-Leaf_Data_Join %>% 
+  mutate(SLA_TF=sqrt(SLA))
+#check normality of transformed data
+Normality_test_SLA_TF <- lm(data = Leaf_Data_Join, SLA_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_SLA_TF) 
+ols_test_normality(Normality_test_SLA_TF)#best transformed with sqrt 
+
+#check for homoscedascity
+leveneTest(SLA_TF ~ treatment, data = Leaf_Data_Join) #p = 0.6714 so > 0.05 so equal variance is met
+
+#run model 
+SLA_model <- aov(SLA_TF ~ treatment, data = Leaf_Data_Join)
+summary(SLA_model) #p=0.000428
+summary(glht(SLA_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+## LDMC  ##
+
+# check for normality #
+#non transformed data
+Normality_test_LDMC <- lm(data = Leaf_Data_Join, LDMC  ~ treatment)
+ols_plot_resid_hist(Normality_test_LDMC) 
+ols_test_normality(Normality_test_LDMC)
+#transform data
+Leaf_Data_Join<-Leaf_Data_Join %>% 
+  mutate(LDMC_TF=sqrt(LDMC))
+#check normality of transformed data
+Normality_test_LDMC_TF <- lm(data = Leaf_Data_Join, LDMC_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_LDMC_TF) 
+ols_test_normality(Normality_test_LDMC_TF)#best transformed with sqrt 
+
+###looking into####
+#check for homoscedascity
+leveneTest(LDMC_TF ~ treatment, data = Leaf_Data_Join) #p = 0.0002646 so < 0.05 so equal variance is not met 
+
+#run model 
+LDMC_model <- aov(LDMC_TF ~ treatment, data = Leaf_Data_Join)
+summary(LDMC_model) #p=7.69e-07
+summary(glht(LDMC_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
+## Leaf Thickness ##
+
+# check for normality #
+#non transformed data
+Normality_test_leaf_thickness <- lm(data = Leaf_Data_Join, leaf_thickness  ~ treatment)
+ols_plot_resid_hist(Normality_test_leaf_thickness) 
+ols_test_normality(Normality_test_leaf_thickness)
+#transform data
+Leaf_Data_Join<-Leaf_Data_Join %>% 
+  mutate(leaf_thickness_TF=log(leaf_thickness))
+#check normality of transformed data
+Normality_test_leaf_thickness_TF <- lm(data = Leaf_Data_Join, leaf_thickness_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_leaf_thickness_TF) 
+ols_test_normality(Normality_test_leaf_thickness_TF)#best transformed with log
+
+###looking into####
+#check for homoscedascity
+leveneTest(leaf_thickness_TF ~ treatment, data = Leaf_Data_Join) #p = 0.04143 so < 0.05 so equal variance is not met 
+
+#run model 
+leaf_thickness_model <- aov(leaf_thickness_TF ~ treatment, data = Leaf_Data_Join)
+summary(leaf_thickness_model) #p=1.34e-05
+summary(glht(leaf_thickness_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
