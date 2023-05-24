@@ -272,6 +272,7 @@ leveneTest(slope_TF ~ treatment, data = MaxLL_Slopes) #p = 0.923 so > 0.05 so eq
 MaxLL_GR_model <- aov(slope_TF ~ treatment, data = MaxLL_Slopes)
 summary(MaxLL_GR_model) #p=0.281
 
+
 ## max plant height stats ##
 
 # check for normality #
@@ -360,7 +361,7 @@ End_Time_Point$treatment<-gsub("-"," ", End_Time_Point$treatment)
 MaxPH_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_plant_height, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Average Max Plant Height (mm)") +
+  labs(x = "Treatment",y ="Maximum Plant Height (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,800))+
   #change color of treatments
@@ -378,7 +379,7 @@ MaxPH_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_plant_height, f
 MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Average Max Leaf Length (mm)") +
+  labs(x = "Treatment",y ="Maximum Leaf Length (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,800))+
   #change color of treatments
@@ -395,7 +396,7 @@ MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fi
 Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = leaf_num, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Average Leaf Number") +
+  labs(x = "Treatment",y ="Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,100))+
   #change color of treatments
@@ -508,7 +509,7 @@ NPP_Join_Alive$treatment<-gsub("-"," ", NPP_Join_Alive$treatment)
 ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Total ANPP:BNPP Ratio (g)") +
+  labs(x = "Treatment",y ="Total Alive ANPP:BNPP") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,4))+
   #change color of treatments
@@ -600,7 +601,7 @@ leveneTest(SLA_TF ~ treatment, data = Leaf_Data_Join) #p = 0.2044 so > 0.05 so e
 
 #run model 
 SLA_model <- aov(SLA_TF ~ treatment, data = Leaf_Data_Join)
-summary(SLA_model) #p=0.000428
+summary(SLA_model) #p=0.000274
 summary(glht(SLA_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
 ## LDMC  ##
@@ -612,7 +613,7 @@ ols_plot_resid_hist(Normality_test_LDMC)
 ols_test_normality(Normality_test_LDMC)
 #transform data
 Leaf_Data_Join<-Leaf_Data_Join %>% 
-  mutate(LDMC_TF=log(LDMC))
+  mutate(LDMC_TF=log10(LDMC))
 #check normality of transformed data
 Normality_test_LDMC_TF <- lm(data = Leaf_Data_Join, LDMC_TF  ~ treatment)
 ols_plot_resid_hist(Normality_test_LDMC_TF) 
@@ -623,7 +624,7 @@ leveneTest(LDMC_TF ~ treatment, data = Leaf_Data_Join) #p = 0.08486 so < 0.05 so
 
 #run model 
 LDMC_model <- aov(LDMC_TF ~ treatment, data = Leaf_Data_Join)
-summary(LDMC_model) #p=7.69e-07
+summary(LDMC_model) #p=4.17e-06
 summary(glht(LDMC_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
 ## Leaf Thickness ##
@@ -635,7 +636,7 @@ ols_plot_resid_hist(Normality_test_leaf_thickness)
 ols_test_normality(Normality_test_leaf_thickness)
 #transform data
 Leaf_Data_Join<-Leaf_Data_Join %>% 
-  mutate(leaf_thickness_TF=log(leaf_thickness))
+  mutate(leaf_thickness_TF=log10(leaf_thickness))
 #check normality of transformed data
 Normality_test_leaf_thickness_TF <- lm(data = Leaf_Data_Join, leaf_thickness_TF  ~ treatment)
 ols_plot_resid_hist(Normality_test_leaf_thickness_TF) 
@@ -646,7 +647,7 @@ leveneTest(leaf_thickness_TF ~ treatment, data = Leaf_Data_Join) #p = 0.04143 so
 
 #run model 
 leaf_thickness_model <- aov(leaf_thickness_TF ~ treatment, data = Leaf_Data_Join)
-summary(leaf_thickness_model) #p=1.34e-05
+summary(leaf_thickness_model) #p=1.62e-05
 summary(glht(leaf_thickness_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
 #### Figure 4: Traits Figure ####
