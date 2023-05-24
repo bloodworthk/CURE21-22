@@ -156,6 +156,14 @@ Alive_Dead_Status<- Through_Time_Join %>%
 Alive_Dead_Status$treatment<-as.factor(Alive_Dead_Status$treatment)
 
 #join ANPP_BNPP dataframe with plant ID and alive/dead status
+NPP_Join_WDead <- Alive_Dead_Status %>%
+  #join Plant data
+  left_join(ANPP_BNPP) %>%
+  mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
+  mutate(Alive_ANPP_WDead=ifelse(survival=="D",0,alive_ANPP_g))
+NPP_Join_WDead$treatment<-as.factor(NPP_Join_WDead$treatment)
+
+#join ANPP_BNPP dataframe with plant ID and alive/dead status
 NPP_Join <- Alive_Dead_Status %>%
   #join Plant data
   left_join(ANPP_BNPP) %>%  
@@ -509,7 +517,7 @@ NPP_Join_Alive$treatment<-gsub("-"," ", NPP_Join_Alive$treatment)
 ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Total Alive ANPP:BNPP") +
+  labs(x = "Treatment",y ="Total ANPP:BNPP") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,4))+
   #change color of treatments
@@ -523,7 +531,7 @@ ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio
 NPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = AliveNPP, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Total Alive NPP (g)") +
+  labs(x = "Treatment",y ="NPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
   expand_limits(y=c(0,4))+
   #change color of treatments
@@ -716,32 +724,52 @@ SLA_Graph+
 
 #### Figure 5: Restoration Stats ####
 
+## Alive ANPP+Dead ##
+# check for normality #
+#non transformed data
+Normality_test_AliveANPPwD_Join <- lm(data = NPP_Join_WDead, Alive_ANPP_WDead  ~ treatment)
+ols_plot_resid_hist(Normality_test_AliveANPPwD_Join) 
+ols_test_normality(Normality_test_AliveANPPwD_Join)
+#transform data
+NPP_Join_WDead<-NPP_Join_WDead %>% 
+  mutate(Alive_ANPP_WDead_TF=sqrt(Alive_ANPP_WDead))
+#check normality of transformed data
+Normality_test_AliveANPP_Join_TF <- lm(data = NPP_Join_WDead, Alive_ANPP_WDead_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_AliveANPP_Join_TF) 
+ols_test_normality(Normality_test_AliveANPP_Join_TF)#best transformed with sqrt
+
+#check for homoscedascity
+leveneTest(Alive_ANPP_WDead_TF ~ treatment, data = NPP_Join_WDead) #p = 0.5343 so < 0.05 so equal variance is met 
+
+#run model 
+AliveANPPwDead_model <- aov(Alive_ANPP_WDead_TF ~ treatment, data = NPP_Join_WDead)
+summary(AliveANPPwDead_model) #p=0.00427
+summary(glht(AliveANPPwDead_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+
 ## Fuel Load ##
 # check for normality #
 #non transformed data
-Normality_test_NPP_Join <- lm(data = NPP_Join, NPP  ~ treatment)
-ols_plot_resid_hist(Normality_test_NPP_Join) 
-ols_test_normality(Normality_test_NPP_Join)
+Normality_test_TotalANPP_Join <- lm(data = NPP_Join, total_ANPP_g  ~ treatment)
+ols_plot_resid_hist(Normality_test_TotalANPP_Join) 
+ols_test_normality(Normality_test_TotalANPP_Join)
 #transform data
 NPP_Join<-NPP_Join %>% 
-  mutate(NPP_TF=sqrt(NPP))
+  mutate(total_ANPP_g_TF=sqrt(total_ANPP_g))
 #check normality of transformed data
-Normality_test_NPP_Join_TF <- lm(data = NPP_Join, NPP_TF  ~ treatment)
-ols_plot_resid_hist(Normality_test_NPP_Join_TF) 
-ols_test_normality(Normality_test_NPP_Join_TF)#best transformed with sqrt
+Normality_test_TotalANPP_Join_TF <- lm(data = NPP_Join, total_ANPP_g_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_TotalANPP_Join_TF) 
+ols_test_normality(Normality_test_TotalANPP_Join_TF)#best transformed with sqrt
 
 #check for homoscedascity
-leveneTest(NPP_TF ~ treatment, data = NPP_Join) #p = 0.09938 so < 0.05 so equal variance is met 
+leveneTest(total_ANPP_g_TF ~ treatment, data = NPP_Join) #p = 0.02268 so < 0.05 so equal variance is met 
 
 #run model 
-NPP_model <- aov(NPP_TF ~ treatment, data = NPP_Join)
-summary(NPP_model) #p=0.016
-summary(glht(NPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
-
+TotalANPP_model <- aov(total_ANPP_g_TF ~ treatment, data = NPP_Join)
+summary(TotalANPP_model) #p=0.114
 
 #### Figure 5: Restoration Figure ####
 
-#### Figure 5B: Survival ####
+## Figure 5A: Survival ##
 End_Time_Point_A_D$treatment<-gsub("-"," ", End_Time_Point_A_D$treatment)
 #stacked bar graph of final alive and dead by treatment - WITH percentages on bars
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") #palette
@@ -764,28 +792,45 @@ Survival_Graph<-ggplot(data=End_Time_Point_A_D %>%
   annotate("text", x=0.6, y=60, label = "A.", size=20)
 #save at 2000x20000
 
-## Figure 5a. Fuel Load Graph ##
-NPP_Join$treatment<-gsub("-"," ", NPP_Join$treatment)
-Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = NPP, fill= treatment)) +
+## Figure 5b. Aboveground Biomass with Dead Plants ##
+NPP_Join_WDead$treatment<-gsub("-"," ", NPP_Join_WDead$treatment)
+ANPP_Dead_Graph<-ggplot(NPP_Join_WDead, aes(x = treatment, y = Alive_ANPP_WDead, fill= treatment)) +
   geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Fuel Load (g of aboveground biomass)") +
+  labs(x = "Treatment",y ="All Alive Biomass (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,6))+
+  expand_limits(y=c(0,4))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=6, label = "B.", size=20)+
-  annotate("text", x=1, y=5, label = "a", size=20)+
-  annotate("text", x=2, y=5, label = "b", size=20)+
-  annotate("text", x=3, y=5, label = "ab", size=20)+
-  annotate("text", x=4, y=5, label = "ab", size=20)
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank()) + #remove legend title
+  annotate("text", x=0.6, y=4, label = "B.", size=20)+
+  annotate("text", x=1, y=3, label = "a", size=20)+
+  annotate("text", x=2, y=3, label = "ab", size=20)+
+  annotate("text", x=3, y=3, label = "b", size=20)+
+  annotate("text", x=4, y=3, label = "ab", size=20)
+#save at 2200x2000
+
+## Figure 5c. Fuel Load Graph ##
+NPP_Join$treatment<-gsub("-"," ", NPP_Join$treatment)
+Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= treatment)) +
+  geom_boxplot() +
+  #create axis labels
+  labs(x = "Treatment",y ="Fuel Load (g of aboveground biomass)") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,3))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=3, label = "C.", size=20)
 #save at 2200x2000
 
 
 #Create Figure
 Survival_Graph +
+  ANPP_Dead_Graph +
   Fuel_Load_Graph +
-  plot_layout(ncol = 1,nrow = 2)
-#save at 2000 x 3000
+  plot_layout(ncol = 1,nrow = 3)
+#save at 2000 x 4000
