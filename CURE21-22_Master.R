@@ -259,55 +259,9 @@ MaxLL_Slopes<-Control_Control_Slopes_DF2 %>%
   mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes)
 
-#### Figure 2: End Time Point Stats ####
+#### End Time Point Stats ####
 
-## max leaf length single TP GR Stats ##
-
-# check for normality #
-#non transformed data
-Normality_test_MaxLL <- lm(data = MaxLL_Slopes, slope ~ treatment)
-ols_plot_resid_hist(Normality_test_MaxLL)
-ols_test_normality(Normality_test_MaxLL)
-#transform data
-MaxLL_Slopes <-MaxLL_Slopes %>% 
-  mutate(slope_TF=sqrt(slope))
-# check for normality of transformed data#
-Normality_test_MaxLL_TF <- lm(data = MaxLL_Slopes, slope_TF ~ treatment)
-ols_plot_resid_hist(Normality_test_MaxLL_TF)
-ols_test_normality(Normality_test_MaxLL_TF) #data transformed 
-
-#check for homoscedascity
-leveneTest(slope_TF ~ treatment, data = MaxLL_Slopes) #p = 0.923 so > 0.05 so equal variance is met
-
-# Run anova comparing slopes to overall_group
-MaxLL_GR_model <- aov(slope_TF ~ treatment, data = MaxLL_Slopes)
-summary(MaxLL_GR_model) #p=0.281
-
-
-## max plant height stats ##
-
-# check for normality #
-#non transformed data
-Normality_test_MPH <- lm(data = End_Time_Point, max_plant_height  ~ treatment)
-ols_plot_resid_hist(Normality_test_MPH)
-ols_test_normality(Normality_test_MPH)
-#transform data
-End_Time_Point<-End_Time_Point %>% 
-  mutate(max_plant_height_TF=log10(max_plant_height))
-#check normality of transformed data
-Normality_test_MPH_TF <- lm(data = End_Time_Point, max_plant_height_TF  ~ treatment)
-ols_plot_resid_hist(Normality_test_MPH_TF) 
-ols_test_normality(Normality_test_MPH_TF) #best transformed with log10 
-
-#check for homoscedascity
-leveneTest(max_plant_height_TF ~ treatment, data = End_Time_Point) #p = 0.2341 so > 0.05 so equal variance is met
-
-#run model 
-MaxPH_model <- aov(max_plant_height_TF ~ treatment, data = End_Time_Point)
-summary(MaxPH_model) #p=0.0022
-summary(glht(MaxPH_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
-
-## max leaf length stats ##
+#### Max Leaf Length Stats ####
 
 # check for normality #
 #non transformed data
@@ -330,7 +284,7 @@ MaxLL_model <- aov(max_leaf_length_TF ~ treatment, data = End_Time_Point)
 summary(MaxLL_model) #p=0.0337
 summary(glht(MaxLL_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-## leaf number stats ##
+#### Leaf Number Stats ####
 
 # check for normality #
 #non transformed data
@@ -353,124 +307,31 @@ leaf_num_model <- aov(leaf_num ~ treatment, data = End_Time_Point)
 summary(leaf_num_model) #p=2.48e-09 
 summary(glht(leaf_num_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-#### Figure 2: End Time Point Figure ####
-
-## Figure 2A. End Time Point Max Leaf Length Growth Rate Figure ##
-MaxLL_Slopes$treatment<-gsub("-"," ", MaxLL_Slopes$treatment)
-MaxLL_GR_Graph<-ggplot(MaxLL_Slopes,aes(x = treatment,y = slope, fill = treatment))+
-  geom_boxplot(outlier.size=4,lwd=1) +
-  #create axis labels
-  labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
-  expand_limits(y=c(0,25))+
-  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=25, label = "C.", size=20)
-
-## Figure 2B. End Timepoint Max Plant Height Graph ##
-End_Time_Point$treatment<-gsub("-"," ", End_Time_Point$treatment)
-#MaxPH_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_plant_height, fill= treatment)) +
- # geom_boxplot() +
-  #create axis labels
-#  labs(x = "Treatment",y ="Maximum Plant Height (mm)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
- # expand_limits(y=c(0,800))+
-  #change color of treatments
-#  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
-  #wrap text for x axis ticks using stringr package
- # scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-#  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
- # annotate("text", x=0.6, y=800, label = "B.", size=20)+
-# annotate("text", x=1, y=700, label = "a", size=20)+
-#  annotate("text", x=2, y=700, label = "ab", size=20)+
-  #annotate("text", x=3, y=700, label = "b", size=20)+
-#  annotate("text", x=4, y=700, label = "b", size=20)
-
-## Figure 2C. End Timepoint Max Leaf Length Graph ##
-MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fill= treatment)) +
-  geom_boxplot(outlier.size=4,lwd=1) +
-  #create axis labels
-  labs(x = "Treatment",y ="Maximum Leaf Length (mm)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,800))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=800, label = "A.", size=20)+
-  annotate("text", x=1, y=700, label = "a", size=20)+
-  annotate("text", x=2, y=700, label = "b", size=20)+
-  annotate("text", x=3, y=700, label = "ab", size=20)+
-  annotate("text", x=4, y=700, label = "ab", size=20)
-
-## Figure 2D. End Timepoint Leaf Number Graph ##
-Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = leaf_num, fill= treatment)) +
-  geom_boxplot(outlier.size=4,lwd=1) +
-  #create axis labels
-  labs(x = "Treatment",y ="Leaf Number") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,100))+
-  #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
-  #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=100, label = "B.", size=20)+
-  annotate("text", x=1, y=85, label = "a", size=20)+
-  annotate("text", x=2, y=85, label = "b", size=20)+
-  annotate("text", x=3, y=85, label = "c", size=20)+
-  annotate("text", x=4, y=85, label = "b", size=20)
-
-#Create Figure
-MaxLL_GR_Graph+
-  MaxPH_Graph+
-  MaxLL_Graph+
-  Leaf_Num_Graph+
-  plot_layout(ncol = 2,nrow = 2)
-#save at 3500 x 2500
-
-#### Figure 3: NPP Stats ####
-
-## ANPP:BNPP Ratio ##
+#### Max Leaf Length Lingle TP GGrowth Rate Stats #####
 
 # check for normality #
 #non transformed data
-Normality_test_Ratio <- lm(data = NPP_Join_Alive, ANPP_BNPP_ratio  ~ treatment)
-ols_plot_resid_hist(Normality_test_Ratio) 
-ols_test_normality(Normality_test_Ratio)
+Normality_test_MaxLL <- lm(data = MaxLL_Slopes, slope ~ treatment)
+ols_plot_resid_hist(Normality_test_MaxLL)
+ols_test_normality(Normality_test_MaxLL)
 #transform data
-NPP_Join_Alive<-NPP_Join_Alive %>% 
-  mutate(ANPP_BNPP_ratio_TF=sqrt(ANPP_BNPP_ratio))
-#check normality of transformed data
-Normality_test_Ratio_TF <- lm(data = NPP_Join_Alive, ANPP_BNPP_ratio_TF  ~ treatment)
-ols_plot_resid_hist(Normality_test_Ratio_TF) 
-ols_test_normality(Normality_test_Ratio_TF)#best transformed with sqrt 
+MaxLL_Slopes <-MaxLL_Slopes %>% 
+  mutate(slope_TF=sqrt(slope))
+# check for normality of transformed data#
+Normality_test_MaxLL_TF <- lm(data = MaxLL_Slopes, slope_TF ~ treatment)
+ols_plot_resid_hist(Normality_test_MaxLL_TF)
+ols_test_normality(Normality_test_MaxLL_TF) #data transformed 
 
 #check for homoscedascity
-leveneTest(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive) #p = 0.3038 so > 0.05 so equal variance is met
+leveneTest(slope_TF ~ treatment, data = MaxLL_Slopes) #p = 0.923 so > 0.05 so equal variance is met
 
-#run model 
-ANPP_BNPP_ratio_model <- aov(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive)
-summary(ANPP_BNPP_ratio_model) #p=0.38
+# Run anova comparing slopes to overall_group
+MaxLL_GR_model <- aov(slope_TF ~ treatment, data = MaxLL_Slopes)
+summary(MaxLL_GR_model) #p=0.281
 
-## Total Alive NPP ##
+#### NPP Stats ####
 
-# check for normality #
-#non transformed data
-Normality_test_AliveNPP <- lm(data = NPP_Join_Alive, AliveNPP  ~ treatment)
-ols_plot_resid_hist(Normality_test_AliveNPP) 
-ols_test_normality(Normality_test_AliveNPP) #normal
-
-#check for homoscedascity
-leveneTest(AliveNPP ~ treatment, data = NPP_Join_Alive) #p = 0.3001 so > 0.05 so equal variance is met
-
-#run model 
-AliveNPP_model <- aov(AliveNPP ~ treatment, data = NPP_Join_Alive)
-summary(AliveNPP_model) #p=0.000776
-summary(glht(AliveNPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
-
-## Alive ANPP ##
+#### Alive ANPP Stats ####
 
 # check for normality #
 #non transformed data
@@ -492,7 +353,7 @@ leveneTest(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.597 so > 0
 Alive_ANPP_model <- aov(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive)
 summary(Alive_ANPP_model) #p=0.0691
 
-## BNPP ##
+#### BNPP Stats ####
 
 # check for normality #
 #non transformed data
@@ -515,40 +376,82 @@ BNPP_model <- aov(BNPP_g_TF ~ treatment, data = NPP_Join_Alive)
 summary(BNPP_model) #p=0.0000827
 summary(glht(BNPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-#### Figure 3A: NPP Figure ####
-NPP_Join_Alive$treatment<-gsub("-"," ", NPP_Join_Alive$treatment)
-## Total ANPP:BNPP Ratio ##
-ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
+#### ANPP:BNPP Ratio Stats ####
+
+# check for normality #
+#non transformed data
+Normality_test_Ratio <- lm(data = NPP_Join_Alive, ANPP_BNPP_ratio  ~ treatment)
+ols_plot_resid_hist(Normality_test_Ratio) 
+ols_test_normality(Normality_test_Ratio)
+#transform data
+NPP_Join_Alive<-NPP_Join_Alive %>% 
+  mutate(ANPP_BNPP_ratio_TF=sqrt(ANPP_BNPP_ratio))
+#check normality of transformed data
+Normality_test_Ratio_TF <- lm(data = NPP_Join_Alive, ANPP_BNPP_ratio_TF  ~ treatment)
+ols_plot_resid_hist(Normality_test_Ratio_TF) 
+ols_test_normality(Normality_test_Ratio_TF)#best transformed with sqrt 
+
+#check for homoscedascity
+leveneTest(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive) #p = 0.3038 so > 0.05 so equal variance is met
+
+#run model 
+ANPP_BNPP_ratio_model <- aov(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive)
+summary(ANPP_BNPP_ratio_model) #p=0.38
+
+#### Figure 2: End Time Point Figure ####
+
+#### Figure 2A. End Timepoint Max Leaf Length Graph ####
+End_Time_Point$treatment<-gsub("-"," ", End_Time_Point$treatment)
+MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
-  labs(x = "Treatment",y ="Alive ANPP:BNPP") +
+  labs(x = "Treatment",y ="Maximum Leaf Length (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,3))+
+  expand_limits(y=c(0,800))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  annotate("text", x=0.6, y=3, label = "F.", size=20)
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=800, label = "A.", size=20)+
+  annotate("text", x=1, y=700, label = "a", size=20)+
+  annotate("text", x=2, y=700, label = "b", size=20)+
+  annotate("text", x=3, y=700, label = "ab", size=20)+
+  annotate("text", x=4, y=700, label = "ab", size=20)
 
-## Figure 3B: Total NPP Graph ##
-#NPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = AliveNPP, fill= treatment)) +
- # geom_boxplot() +
+#### Figure 2B. End Timepoint Leaf Number Graph ####
+Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = leaf_num, fill= treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
-#  labs(x = "Treatment",y ="Total Biomass (Alive ANPP + BNPP) (g)") +
+  labs(x = "Treatment",y ="Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
- # expand_limits(y=c(0,4))+
+  expand_limits(y=c(0,100))+
   #change color of treatments
-#  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
- # scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-#  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
- # annotate("text", x=0.6, y=4, label = "B.", size=20)+
-#  annotate("text", x=1, y=3.8, label = "a", size=20)+
- # annotate("text", x=2, y=3.8, label = "b", size=20)+
-#  annotate("text", x=3, y=3.8, label = "b", size=20)+
- # annotate("text", x=4, y=3.8, label = "b", size=20)
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=100, label = "B.", size=20)+
+  annotate("text", x=1, y=85, label = "a", size=20)+
+  annotate("text", x=2, y=85, label = "b", size=20)+
+  annotate("text", x=3, y=85, label = "c", size=20)+
+  annotate("text", x=4, y=85, label = "b", size=20)
 
-## Figure 3C: Total Alive ANPP Graph ##
+#### Figure 2C. End Time Point Max Leaf Length Growth Rate Figure ####
+MaxLL_Slopes$treatment<-gsub("-"," ", MaxLL_Slopes$treatment)
+MaxLL_GR_Graph<-ggplot(MaxLL_Slopes,aes(x = treatment,y = slope, fill = treatment))+
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
+  expand_limits(y=c(0,25))+
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=25, label = "C.", size=20)
+
+#### Figure 2D: Total Alive ANPP Graph ####
+NPP_Join_Alive$treatment<-gsub("-"," ", NPP_Join_Alive$treatment)
+
 ANPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = alive_ANPP_g, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -561,7 +464,7 @@ ANPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = alive_ANPP_g, fill= 
   scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
   annotate("text", x=0.6, y=3, label = "D.", size=20)
 
-## Figure 3D: BNPP Graph ##
+#### Figure 2E: BNPP Graph ####
 BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = BNPP_g, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -578,15 +481,20 @@ BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = BNPP_g, fill= treatm
   annotate("text", x=3, y=2, label = "ab", size=20)+
   annotate("text", x=4, y=2, label = "ab", size=20)
 
-#Create Figure
-ANPP_BNPP_Graph+
-  NPP_Graph+
-  ANPP_Graph+
-  BNPP_Graph+
-  plot_layout(ncol = 2,nrow = 2)
-#save at 3500 x 2500
+#### Figure 2F: NPP Figure ####
+ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Alive ANPP:BNPP") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,3))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  annotate("text", x=0.6, y=3, label = "F.", size=20)
 
-#Create 6 paneled Figure
+#### Create 6 paneled Figure 2 ####
 MaxLL_Graph+
   Leaf_Num_Graph+
   MaxLL_GR_Graph+
@@ -598,7 +506,7 @@ MaxLL_Graph+
 
 #### Figure 4: Trait Stats ####
 
-## SLA  ##
+#### SLA Stats  ####
 
 # check for normality #
 #non transformed data
@@ -621,7 +529,7 @@ SLA_model <- aov(SLA_TF ~ treatment, data = Leaf_Data_Join)
 summary(SLA_model) #p=0.000274
 summary(glht(SLA_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-## LDMC  ##
+#### LDMC Stats ####
 
 # check for normality #
 #non transformed data
@@ -644,7 +552,7 @@ LDMC_model <- aov(LDMC_TF ~ treatment, data = Leaf_Data_Join)
 summary(LDMC_model) #p=4.17e-06
 summary(glht(LDMC_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-## Leaf Thickness ##
+#### Leaf Thickness Stats ####
 
 # check for normality #
 #non transformed data
@@ -670,7 +578,7 @@ summary(glht(leaf_thickness_model, linfct = mcp(treatment = "Tukey")), test = ad
 #### Figure 4: Traits Figure ####
 Leaf_Data_Join$treatment<-gsub("-"," ", Leaf_Data_Join$treatment)
 
-## Figure 4A: SLA Graph ##
+#### Figure 4A: SLA Graph ####
 SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = SLA, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -688,7 +596,7 @@ SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = SLA, fill= treatment)
   annotate("text", x=3, y=900, label = "b", size=20)+
   annotate("text", x=4, y=900, label = "b", size=20)
 
-## Figure 4B: LDMC Graph ##
+#### Figure 4B: LDMC Graph ####
 LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = LDMC, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -706,8 +614,7 @@ LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = LDMC, fill= treatmen
   annotate("text", x=3, y=1.75, label = "b", size=20)+
   annotate("text", x=4, y=1.75, label = "b", size=20)
 
-
-## Figure 4C: Leaf Thickness Graph ##
+#### Figure 4C: Leaf Thickness Graph ####
 LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = leaf_thickness, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -724,7 +631,7 @@ LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = leaf_thickn
   annotate("text", x=3, y=0.42, label = "b", size=20)+
   annotate("text", x=4, y=0.42, label = "a", size=20)
 
-#Create Figure
+#### Create Figure 3 ####
 SLA_Graph+
   LDMC_Graph+
   LeafThickness_Graph+
@@ -733,29 +640,8 @@ SLA_Graph+
 
 #### Figure 5: Restoration Stats ####
 
-## Alive ANPP+Dead ##
-# check for normality #
-#non transformed data
-Normality_test_AliveANPPwD_Join <- lm(data = NPP_Join_WDead, Alive_ANPP_WDead  ~ treatment)
-ols_plot_resid_hist(Normality_test_AliveANPPwD_Join) 
-ols_test_normality(Normality_test_AliveANPPwD_Join)
-#transform data
-NPP_Join_WDead<-NPP_Join_WDead %>% 
-  mutate(Alive_ANPP_WDead_TF=sqrt(Alive_ANPP_WDead))
-#check normality of transformed data
-Normality_test_AliveANPP_Join_TF <- lm(data = NPP_Join_WDead, Alive_ANPP_WDead_TF  ~ treatment)
-ols_plot_resid_hist(Normality_test_AliveANPP_Join_TF) 
-ols_test_normality(Normality_test_AliveANPP_Join_TF)#best transformed with sqrt
+#### Fuel Load Stats ####
 
-#check for homoscedascity
-leveneTest(Alive_ANPP_WDead_TF ~ treatment, data = NPP_Join_WDead) #p = 0.5343 so < 0.05 so equal variance is met 
-
-#run model 
-AliveANPPwDead_model <- aov(Alive_ANPP_WDead_TF ~ treatment, data = NPP_Join_WDead)
-summary(AliveANPPwDead_model) #p=0.00427
-summary(glht(AliveANPPwDead_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
-
-## Fuel Load ##
 # check for normality #
 #non transformed data
 Normality_test_TotalANPP_Join <- lm(data = NPP_Join, total_ANPP_g  ~ treatment)
@@ -778,7 +664,7 @@ summary(TotalANPP_model) #p=0.114
 
 #### Figure 5: Restoration Figure ####
 
-## Figure 5A: Survival ##
+#### Figure 5A: Survival ####
 End_Time_Point_A_D$treatment<-gsub("-"," ", End_Time_Point_A_D$treatment)
 #stacked bar graph of final alive and dead by treatment - WITH percentages on bars
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") #palette
@@ -801,27 +687,7 @@ Survival_Graph<-ggplot(data=End_Time_Point_A_D %>%
   annotate("text", x=0.6, y=45, label = "A.", size=20)
 #save at 2000x20000
 
-## Figure 5b. Aboveground Biomass with Dead Plants ##
-NPP_Join_WDead$treatment<-gsub("-"," ", NPP_Join_WDead$treatment)
-#ANPP_Dead_Graph<-ggplot(NPP_Join_WDead, aes(x = treatment, y = Alive_ANPP_WDead, fill= treatment)) +
- # geom_boxplot(outlier.size=4,lwd=1) +
-  #create axis labels
-#  labs(x = "Treatment",y ="All Alive Biomass (g)") +
-  #expand limits of graph so that the y axis goes up to 800 to encompass all points
-#expand_limits(y=c(0,4))+
-  #change color of treatments
-#  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
-  #wrap text for x axis ticks using stringr package
- # scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-#  theme(axis.title.x=element_blank(), axis.text.x = element_blank()) + #remove legend title
-# annotate("text", x=0.6, y=4, label = "B.", size=20)+
-#  annotate("text", x=1, y=3, label = "a", size=20)+
- # annotate("text", x=2, y=3, label = "ab", size=20)+
- # annotate("text", x=3, y=3, label = "b", size=20)+
-#  annotate("text", x=4, y=3, label = "ab", size=20)
-#save at 2200x2000
-
-## Figure 5c. Fuel Load Graph ##
+#### ## Figure 5c. Fuel Load Graph ####
 NPP_Join$treatment<-gsub("-"," ", NPP_Join$treatment)
 Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
@@ -839,7 +705,6 @@ Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= tre
 
 #Create Figure
 Survival_Graph +
-  #ANPP_Dead_Graph +
   Fuel_Load_Graph +
   plot_layout(ncol = 1,nrow = 2)
 #save at 1500 x 3000
