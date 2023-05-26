@@ -457,12 +457,12 @@ ANPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = alive_ANPP_g, fill= 
   #create axis labels
   labs(x = "Treatment",y ="Alive ANPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,3))+
+  expand_limits(y=c(0,2.5))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  annotate("text", x=0.6, y=3, label = "D.", size=20)
+  annotate("text", x=0.6, y=2.5, label = "D.", size=20)
 
 #### Figure 2E: BNPP Graph ####
 BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = BNPP_g, fill= treatment)) +
@@ -470,16 +470,16 @@ BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = BNPP_g, fill= treatm
   #create axis labels
   labs(x = "Treatment",y ="BNPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,3))+
+  expand_limits(y=c(0,2.5))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  annotate("text", x=0.6, y=3, label = "E.", size=20)+
-  annotate("text", x=1, y=2, label = "a", size=20)+
-  annotate("text", x=2, y=2, label = "b", size=20)+
-  annotate("text", x=3, y=2, label = "ab", size=20)+
-  annotate("text", x=4, y=2, label = "ab", size=20)
+  annotate("text", x=0.6, y=2.5, label = "E.", size=20)+
+  annotate("text", x=1, y=1.7, label = "a", size=20)+
+  annotate("text", x=2, y=1.7, label = "b", size=20)+
+  annotate("text", x=3, y=1.7, label = "ab", size=20)+
+  annotate("text", x=4, y=1.7, label = "ab", size=20)
 
 #### Figure 2F: NPP Figure ####
 ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
@@ -487,12 +487,13 @@ ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio
   #create axis labels
   labs(x = "Treatment",y ="Alive ANPP:BNPP") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,3))+
+  expand_limits(y=c(0,2.5))+
+  geom_hline(yintercept = 1, colour = "gray20",size=1,linetype="dashed")+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
-  annotate("text", x=0.6, y=3, label = "F.", size=20)
+  annotate("text", x=0.6, y=2.5, label = "F.", size=20)
 
 #### Create 6 paneled Figure 2 ####
 MaxLL_Graph+
