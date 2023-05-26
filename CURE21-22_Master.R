@@ -11,6 +11,7 @@ library(multcomp)
 library(tidyverse)
 library(grid)
 library(car)
+library(olsrr)
 library(patchwork)
 
 #### Set working directory ####
@@ -137,7 +138,7 @@ Through_Time_Join<-Through_Time_Fall %>%
 End_Time_Point_A_D <- Through_Time_Join %>% 
   filter(week_num=="22") %>% 
   select(-c(week_num,soil_moisture,light_avail,air_temp,humidity)) %>% 
-  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group))))) 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 End_Time_Point_A_D$treatment<-as.factor(End_Time_Point_A_D$treatment)
 
 #make dataframe with only living plants
@@ -149,7 +150,7 @@ End_Time_Point$treatment<-as.factor(End_Time_Point$treatment)
 Alive_Dead_Status<- Through_Time_Join %>% 
   filter(week_num=="22") %>% 
   select(-c(week_num,soil_moisture,light_avail,air_temp,humidity)) %>% 
-  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group))))) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group)))))  %>% 
   separate(spring_plant_ID,c("spring_day","spring_treatment","spring_plant"), sep = "_") %>% 
   full_join(PlantID_BiomassRemoved) %>% 
   drop_na(biomass_removed) 
@@ -169,22 +170,24 @@ NPP_Join <- Alive_Dead_Status %>%
   left_join(ANPP_BNPP) %>%  
   mutate(spring_plant_ID=paste(spring_day,spring_treatment,spring_plant,sep="_")) %>% 
   #remove any plants with NAs for Alive ANPP because they didn't get measured
-  drop_na(alive_ANPP_g) %>% ##### look into why there are so many NAs#####
+  drop_na(alive_ANPP_g) %>% 
   #compute mutate step row by row
   rowwise() %>% 
   #total up the total NPP
   mutate(NPP = sum(c(total_ANPP_g, BNPP_g,rm.na=TRUE))) %>% 
   mutate(AliveNPP=sum(c(alive_ANPP_g,BNPP_g,rm.na=TRUE))) %>% 
   select(overall_group,spring_plant_ID,alive_ANPP_g,dead_ANPP_g,total_ANPP_g,BNPP_g,NPP,AliveNPP,survival, comments) %>% 
-  mutate(ANPP_BNPP_ratio = total_ANPP_g / BNPP_g) %>% 
-  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group))))) 
+  mutate(ANPP_BNPP_ratio = alive_ANPP_g / BNPP_g) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group)))))  
 NPP_Join$treatment<-as.factor(NPP_Join$treatment)
 
 #make dataframe with only live plants
 NPP_Join_Alive <- NPP_Join %>% 
   #remove all dead plants from biomass
-  filter(survival!="D") %>% 
-  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group)))))
+  filter(survival!="D") %>%
+  #remove plants where alive ANPP is 0
+  filter(alive_ANPP_g!=0) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 NPP_Join_Alive$treatment<-as.factor(NPP_Join_Alive$treatment)
 
 #### Clean Leaf Trait Data ####
@@ -202,7 +205,7 @@ Leaf_Data_Join <- Leaf_Data %>%
   mutate(LDMC = dry_leaf_weight / wet_leaf_weight,na.rm=TRUE) %>%
   mutate(SLA = leaf_area / dry_leaf_weight,na.rm=TRUE) %>% 
   select(overall_group,spring_plant_ID,leaf_number,wet_leaf_weight,dry_leaf_weight,leaf_area,leaf_thickness,SLA,LDMC)%>% 
-  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group)))))
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 Leaf_Data_Join$treatment<-as.factor(Leaf_Data_Join$treatment)
 
 #### Growth Rate Calculations ####
@@ -253,7 +256,7 @@ MaxLL_Slopes<-Control_Control_Slopes_DF2 %>%
   rbind(control_heatwave_Slopes_DF2) %>% 
   rbind(heatwave_heatwave_Slopes_DF2) %>% 
   filter(slope>0) %>% 
-  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-Heatwave",ifelse(overall_group=="Control-Heatwave","Late-Heatwave",ifelse(overall_group=="Heatwave-Heatwave","Two-Heatwaves",overall_group)))))
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes)
 
 #### Figure 2: End Time Point Stats ####
@@ -355,37 +358,37 @@ summary(glht(leaf_num_model, linfct = mcp(treatment = "Tukey")), test = adjusted
 ## Figure 2A. End Time Point Max Leaf Length Growth Rate Figure ##
 MaxLL_Slopes$treatment<-gsub("-"," ", MaxLL_Slopes$treatment)
 MaxLL_GR_Graph<-ggplot(MaxLL_Slopes,aes(x = treatment,y = slope, fill = treatment))+
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Relative Growth Rate (mm/week)") +
-  expand_limits(y=c(0,30))+
+  expand_limits(y=c(0,25))+
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=30, label = "A.", size=20)
+  annotate("text", x=0.6, y=25, label = "C.", size=20)
 
 ## Figure 2B. End Timepoint Max Plant Height Graph ##
 End_Time_Point$treatment<-gsub("-"," ", End_Time_Point$treatment)
-MaxPH_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_plant_height, fill= treatment)) +
-  geom_boxplot() +
+#MaxPH_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_plant_height, fill= treatment)) +
+ # geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="Maximum Plant Height (mm)") +
+#  labs(x = "Treatment",y ="Maximum Plant Height (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,800))+
+ # expand_limits(y=c(0,800))+
   #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+#  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=800, label = "B.", size=20)+
-  annotate("text", x=1, y=700, label = "a", size=20)+
-  annotate("text", x=2, y=700, label = "ab", size=20)+
-  annotate("text", x=3, y=700, label = "b", size=20)+
-  annotate("text", x=4, y=700, label = "b", size=20)
+ # scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+#  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+ # annotate("text", x=0.6, y=800, label = "B.", size=20)+
+# annotate("text", x=1, y=700, label = "a", size=20)+
+#  annotate("text", x=2, y=700, label = "ab", size=20)+
+  #annotate("text", x=3, y=700, label = "b", size=20)+
+#  annotate("text", x=4, y=700, label = "b", size=20)
 
 ## Figure 2C. End Timepoint Max Leaf Length Graph ##
 MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Maximum Leaf Length (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -393,8 +396,9 @@ MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fi
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=800, label = "C.", size=20)+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=800, label = "A.", size=20)+
   annotate("text", x=1, y=700, label = "a", size=20)+
   annotate("text", x=2, y=700, label = "b", size=20)+
   annotate("text", x=3, y=700, label = "ab", size=20)+
@@ -402,7 +406,7 @@ MaxLL_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = max_leaf_length, fi
 
 ## Figure 2D. End Timepoint Leaf Number Graph ##
 Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = leaf_num, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Leaf Number") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -410,8 +414,9 @@ Leaf_Num_Graph <- ggplot(End_Time_Point, aes(x = treatment, y = leaf_num, fill= 
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=100, label = "D.", size=20)+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x=0.6, y=100, label = "B.", size=20)+
   annotate("text", x=1, y=85, label = "a", size=20)+
   annotate("text", x=2, y=85, label = "b", size=20)+
   annotate("text", x=3, y=85, label = "c", size=20)+
@@ -443,13 +448,13 @@ ols_plot_resid_hist(Normality_test_Ratio_TF)
 ols_test_normality(Normality_test_Ratio_TF)#best transformed with sqrt 
 
 #check for homoscedascity
-leveneTest(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive) #p = 0.90668 so > 0.05 so equal variance is met
+leveneTest(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive) #p = 0.3038 so > 0.05 so equal variance is met
 
 #run model 
 ANPP_BNPP_ratio_model <- aov(ANPP_BNPP_ratio_TF ~ treatment, data = NPP_Join_Alive)
-summary(ANPP_BNPP_ratio_model) #p=0.729 
+summary(ANPP_BNPP_ratio_model) #p=0.38
 
-## Total Alive NPP Ratio ##
+## Total Alive NPP ##
 
 # check for normality #
 #non transformed data
@@ -458,11 +463,11 @@ ols_plot_resid_hist(Normality_test_AliveNPP)
 ols_test_normality(Normality_test_AliveNPP) #normal
 
 #check for homoscedascity
-leveneTest(AliveNPP ~ treatment, data = NPP_Join_Alive) #p = 0.2072 so > 0.05 so equal variance is met
+leveneTest(AliveNPP ~ treatment, data = NPP_Join_Alive) #p = 0.3001 so > 0.05 so equal variance is met
 
 #run model 
 AliveNPP_model <- aov(AliveNPP ~ treatment, data = NPP_Join_Alive)
-summary(AliveNPP_model) #p=0.000462
+summary(AliveNPP_model) #p=0.000776
 summary(glht(AliveNPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
 ## Alive ANPP ##
@@ -481,12 +486,11 @@ ols_plot_resid_hist(Normality_test_Alive_ANPP_TF)
 ols_test_normality(Normality_test_Alive_ANPP_TF)#best transformed with sqrt 
 
 #check for homoscedascity
-leveneTest(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.09243 so > 0.05 so equal variance is met
+leveneTest(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.597 so > 0.05 so equal variance is met
 
 #run model 
 Alive_ANPP_model <- aov(alive_ANPP_g_TF ~ treatment, data = NPP_Join_Alive)
-summary(Alive_ANPP_model) #p=0.00218
-summary(glht(Alive_ANPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
+summary(Alive_ANPP_model) #p=0.0691
 
 ## BNPP ##
 
@@ -504,80 +508,75 @@ ols_plot_resid_hist(Normality_test_BNPP_TF)
 ols_test_normality(Normality_test_BNPP_TF)#best transformed with log
 
 #check for homoscedascity
-leveneTest(BNPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.06383 so > 0.05 so equal variance is met
+leveneTest(BNPP_g_TF ~ treatment, data = NPP_Join_Alive) #p = 0.162 so > 0.05 so equal variance is met
 
 #run model 
 BNPP_model <- aov(BNPP_g_TF ~ treatment, data = NPP_Join_Alive)
-summary(BNPP_model) #p=0.000477
+summary(BNPP_model) #p=0.0000827
 summary(glht(BNPP_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
 #### Figure 3A: NPP Figure ####
 NPP_Join_Alive$treatment<-gsub("-"," ", NPP_Join_Alive$treatment)
 ## Total ANPP:BNPP Ratio ##
 ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
-  labs(x = "Treatment",y ="Total ANPP:BNPP") +
+  labs(x = "Treatment",y ="Alive ANPP:BNPP") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
+  expand_limits(y=c(0,3))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=4, label = "A.", size=20)
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  annotate("text", x=0.6, y=3, label = "F.", size=20)
 
 ## Figure 3B: Total NPP Graph ##
-NPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = AliveNPP, fill= treatment)) +
-  geom_boxplot() +
+#NPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = AliveNPP, fill= treatment)) +
+ # geom_boxplot() +
   #create axis labels
-  labs(x = "Treatment",y ="NPP (g)") +
+#  labs(x = "Treatment",y ="Total Biomass (Alive ANPP + BNPP) (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
+ # expand_limits(y=c(0,4))+
   #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+#  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x=0.6, y=4, label = "B.", size=20)+
-  annotate("text", x=1, y=3.8, label = "a", size=20)+
-  annotate("text", x=2, y=3.8, label = "b", size=20)+
-  annotate("text", x=3, y=3.8, label = "b", size=20)+
-  annotate("text", x=4, y=3.8, label = "b", size=20)
+ # scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+#  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+ # annotate("text", x=0.6, y=4, label = "B.", size=20)+
+#  annotate("text", x=1, y=3.8, label = "a", size=20)+
+ # annotate("text", x=2, y=3.8, label = "b", size=20)+
+#  annotate("text", x=3, y=3.8, label = "b", size=20)+
+ # annotate("text", x=4, y=3.8, label = "b", size=20)
 
 ## Figure 3C: Total Alive ANPP Graph ##
 ANPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = alive_ANPP_g, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Alive ANPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
+  expand_limits(y=c(0,3))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=4, label = "C.", size=20)+
-  annotate("text", x=1, y=3, label = "a", size=20)+
-  annotate("text", x=2, y=3, label = "ab", size=20)+
-  annotate("text", x=3, y=3, label = "c", size=20)+
-  annotate("text", x=4, y=3, label = "bc", size=20)
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  annotate("text", x=0.6, y=3, label = "D.", size=20)
 
 ## Figure 3D: BNPP Graph ##
 BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = BNPP_g, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="BNPP (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
+  expand_limits(y=c(0,3))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=4, label = "D.", size=20)+
-  annotate("text", x=1, y=3, label = "a", size=20)+
-  annotate("text", x=2, y=3, label = "b", size=20)+
-  annotate("text", x=3, y=3, label = "a", size=20)+
-  annotate("text", x=4, y=3, label = "ab", size=20)
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 5))+
+  annotate("text", x=0.6, y=3, label = "E.", size=20)+
+  annotate("text", x=1, y=2, label = "a", size=20)+
+  annotate("text", x=2, y=2, label = "b", size=20)+
+  annotate("text", x=3, y=2, label = "ab", size=20)+
+  annotate("text", x=4, y=2, label = "ab", size=20)
 
 #Create Figure
 ANPP_BNPP_Graph+
@@ -586,6 +585,16 @@ ANPP_BNPP_Graph+
   BNPP_Graph+
   plot_layout(ncol = 2,nrow = 2)
 #save at 3500 x 2500
+
+#Create 6 paneled Figure
+MaxLL_Graph+
+  Leaf_Num_Graph+
+  MaxLL_GR_Graph+
+  ANPP_Graph+
+  BNPP_Graph+
+  ANPP_BNPP_Graph+
+  plot_layout(ncol = 3,nrow = 2)
+#save at 3500 x 2250
 
 #### Figure 4: Trait Stats ####
 
@@ -663,7 +672,7 @@ Leaf_Data_Join$treatment<-gsub("-"," ", Leaf_Data_Join$treatment)
 
 ## Figure 4A: SLA Graph ##
 SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = SLA, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y =expression ("Specific Leaf Area"~(mm^2/g))) +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -681,7 +690,7 @@ SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = SLA, fill= treatment)
 
 ## Figure 4B: LDMC Graph ##
 LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = LDMC, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Leaf Dry Matter Content (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -700,7 +709,7 @@ LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = LDMC, fill= treatmen
 
 ## Figure 4C: Leaf Thickness Graph ##
 LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = leaf_thickness, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Leaf Thickness (mm)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -710,10 +719,10 @@ LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = leaf_thickn
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   annotate("text", x=0.6, y=0.5, label = "C.", size=20)+
-  annotate("text", x=1, y=0.4, label = "a", size=20)+
-  annotate("text", x=2, y=0.4, label = "b", size=20)+
-  annotate("text", x=3, y=0.4, label = "b", size=20)+
-  annotate("text", x=4, y=0.4, label = "a", size=20)
+  annotate("text", x=1, y=0.42, label = "a", size=20)+
+  annotate("text", x=2, y=0.42, label = "b", size=20)+
+  annotate("text", x=3, y=0.42, label = "b", size=20)+
+  annotate("text", x=4, y=0.42, label = "a", size=20)
 
 #Create Figure
 SLA_Graph+
@@ -783,39 +792,39 @@ Survival_Graph<-ggplot(data=End_Time_Point_A_D %>%
   labs(x = "Treatment",y ="Number of Plants") +
   geom_text(aes(label=paste0(sprintf("%1.1f", percent*100), "%")), #percentage label format
             position=position_stack(vjust=0.5),
-            size=20) +
-  expand_limits(y=c(0,60))+
+            size=18) +
+  expand_limits(y=c(0,45))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   theme(legend.title=element_blank(),legend.position = c(0.8,0.9),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),axis.title.x=element_blank(), axis.text.x = element_blank()) + #remove legend title
   scale_fill_manual(values=c(cbPalette[3],cbPalette[7]),labels=c('Alive Plants', 'Dead Plants'))+ #set colors
-  annotate("text", x=0.6, y=60, label = "A.", size=20)
+  annotate("text", x=0.6, y=45, label = "A.", size=20)
 #save at 2000x20000
 
 ## Figure 5b. Aboveground Biomass with Dead Plants ##
 NPP_Join_WDead$treatment<-gsub("-"," ", NPP_Join_WDead$treatment)
-ANPP_Dead_Graph<-ggplot(NPP_Join_WDead, aes(x = treatment, y = Alive_ANPP_WDead, fill= treatment)) +
-  geom_boxplot() +
+#ANPP_Dead_Graph<-ggplot(NPP_Join_WDead, aes(x = treatment, y = Alive_ANPP_WDead, fill= treatment)) +
+ # geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
-  labs(x = "Treatment",y ="All Alive Biomass (g)") +
+#  labs(x = "Treatment",y ="All Alive Biomass (g)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(0,4))+
+#expand_limits(y=c(0,4))+
   #change color of treatments
-  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+#  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank()) + #remove legend title
-  annotate("text", x=0.6, y=4, label = "B.", size=20)+
-  annotate("text", x=1, y=3, label = "a", size=20)+
-  annotate("text", x=2, y=3, label = "ab", size=20)+
-  annotate("text", x=3, y=3, label = "b", size=20)+
-  annotate("text", x=4, y=3, label = "ab", size=20)
+ # scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+#  theme(axis.title.x=element_blank(), axis.text.x = element_blank()) + #remove legend title
+# annotate("text", x=0.6, y=4, label = "B.", size=20)+
+#  annotate("text", x=1, y=3, label = "a", size=20)+
+ # annotate("text", x=2, y=3, label = "ab", size=20)+
+ # annotate("text", x=3, y=3, label = "b", size=20)+
+#  annotate("text", x=4, y=3, label = "ab", size=20)
 #save at 2200x2000
 
 ## Figure 5c. Fuel Load Graph ##
 NPP_Join$treatment<-gsub("-"," ", NPP_Join$treatment)
 Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= treatment)) +
-  geom_boxplot() +
+  geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
   labs(x = "Treatment",y ="Fuel Load (g of aboveground biomass)") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
@@ -824,13 +833,13 @@ Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= tre
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=3, label = "C.", size=20)
+  annotate("text", x=0.6, y=3, label = "B.", size=20)
 #save at 2200x2000
 
 
 #Create Figure
 Survival_Graph +
-  ANPP_Dead_Graph +
+  #ANPP_Dead_Graph +
   Fuel_Load_Graph +
-  plot_layout(ncol = 1,nrow = 3)
-#save at 2000 x 4000
+  plot_layout(ncol = 1,nrow = 2)
+#save at 1500 x 3000
