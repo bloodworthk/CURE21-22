@@ -504,7 +504,7 @@ MaxLL_Graph+
   plot_layout(ncol = 3,nrow = 2)
 #save at 3500 x 2250
 
-#### Figure 4: Trait Stats ####
+#### Trait Stats ####
 
 #### SLA Stats  ####
 
