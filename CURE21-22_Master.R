@@ -260,6 +260,7 @@ MaxLL_Slopes<-Control_Control_Slopes_DF2 %>%
 MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes)
 
 #### Clean up Abiotic Data ####
+
 #subset data
 AbioticSubsetwk1_9 <- Through_Time_Join_NCG %>%
   select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>%
@@ -291,16 +292,20 @@ Through_Time_Join_NCG<-Through_Time_Join_NCG %>%
   mutate(light_avail_TF=log10(light_avail))
 
 # check for normality #
-Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_group)ols_plot_resid_hist(Normality_test_Temp) 
+Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp) 
 
 #looks best without transformations
-ols_test_normality(Normality_test_Temp) Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
+ols_test_normality(Normality_test_Temp)
+Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
 
 ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
-ols_test_normality(Normality_test_humidity) Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)
+ols_test_normality(Normality_test_humidity)
+Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)
 
 ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
-ols_test_normality(Normality_test_SM) Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)
+ols_test_normality(Normality_test_SM) 
+Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)
 
 ols_plot_resid_hist(Normality_test_light) #looks best log transformed
 ols_test_normality(Normality_test_light)
