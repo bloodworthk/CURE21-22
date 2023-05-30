@@ -259,6 +259,104 @@ MaxLL_Slopes<-Control_Control_Slopes_DF2 %>%
   mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes)
 
+#### Clean up Abiotic Data ####
+#subset data
+AbioticSubsetwk1_9 <- Through_Time_Join_NCG %>%
+  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>%
+  filter(week_num<=9) %>%
+  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group)))))
+
+AbioticSubsetwk18_22 <- Through_Time_Join_NCG %>%
+  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>%
+  filter(week_num>9)
+
+AbioticSubset<-Through_Time_Join_NCG%>%
+  #rbind(AbioticSubsetwk18_22) %>%
+  group_by(overall_group,week_num) %>%
+  summarize(Air_Temp_std=sd(air_temp, na.rm = TRUE),Air_Temp_Mean=mean(air_temp, na.rm = TRUE),Air_Temp_n=length(air_temp),SM_std=sd(soil_moisture, na.rm = TRUE),SM_Mean=mean(soil_moisture, na.rm = TRUE),SM_n=length(soil_moisture),Light_std=sd(light_avail, na.rm = TRUE),Light_Mean=mean(light_avail, na.rm = TRUE),Light_n=length(light_avail),humidity_std=sd(humidity, na.rm = TRUE),humidity_Mean=mean(humidity, na.rm = TRUE),humidity_n=length(humidity)) %>%
+  mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n),SM_St_Error=SM_std/sqrt(SM_n),Light_St_Error=Light_std/sqrt(Light_n),humidity_St_Error=humidity_std/sqrt(humidity_n)) %>%
+  ungroup()
+
+AbioticSubset$week_num<-as.factor(AbioticSubset$week_num)
+
+
+#### Abiotic Stats ####
+
+#transform data
+Through_Time_Join_NCG<-Through_Time_Join_NCG %>%
+  #mutate(air_temp_TF=log10(air_temp)) %>%
+  #transformation doesnt help - looks relatively normal 
+  #mutate(humidity_TF=sqrt(humidity)) %>% #looks best without transformations 
+  mutate(soil_moisture_TF=sqrt(soil_moisture)) %>%  
+  mutate(light_avail_TF=log10(light_avail))
+
+# check for normality #
+Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_group)ols_plot_resid_hist(Normality_test_Temp) 
+
+#looks best without transformations
+ols_test_normality(Normality_test_Temp) Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
+ols_test_normality(Normality_test_humidity) Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
+ols_test_normality(Normality_test_SM) Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)ols_plot_resid_hist(Normality_test_light) #looks best log transformed
+ols_test_normality(Normality_test_light)
+
+#### Figure 1: Abiotics ####
+
+#### Figure 1A. Temperature ####
+TempGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_group,color=overall_group))+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+  scale_shape_manual(values=c(15,16,17,18))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
+  xlab("Week Number")+
+  ylab("Temperature (C)")+
+  10:51
+expand_limits(y=c(10,50))+
+  annotate("text", x=2.2, y=50, label = "A. Air Temperature", size=20)+
+  theme(legend.position = c(0.8,0.80),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  10:51
+theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x="3", y=40, label = "*", size=20)+
+  annotate("text", x="4", y=40, label = "*", size=20)+
+  annotate("text", x="18", y=28, label = "*", size=20)+
+  annotate("text", x="19", y=28, label = "*", size=20)+
+  annotate("text", x="20", y=28, label = "*", size=20)+
+  annotate("text", x="22", y=28, label = "*", size=20)
+
+
+#### Figure 1B. Humidity ####
+HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+
+  10:53
+annotate("text", x=1.6, y=100, label = "B. Humidity", size=20)+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  10:53
+theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x="3", y=100, label = "*", size=20)+
+  annotate("text", x="4", y=100, label = "*", size=20)+
+  #annotate("text", x=18, y=28, label = "*", size=20)+
+  annotate("text", x="19", y=100, label = "*", size=20)+
+  annotate("text", x="20", y=100, label = "*", size=20)+
+  annotate("text", x="22", y=100, label = "*", size=20)
+
+#### Figure 1C. Soil Moisture ####
+SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,color=overall_group))+
+  annotate("text", x=1.9, y=20, label = "C. Soil Moisture", size=20)+
+  #add in rectangle around heatwave
+  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate("text", x="3", y=15, label = "*", size=20)+
+  annotate("text", x="4", y=15, label = "*", size=20)+
+  #annotate("text", x=18, y=28, label = "*", size=20)+
+  annotate("text", x="19", y=15, label = "*", size=20)+
+  annotate("text", x="20", y=15, label = "*", size=20)+
+  annotate("text", x="22", y=15, label = "*", size=20)
+
+#### Create Figure 1 #### 
+TempGraph+
+  HumidityGraph+
+  SMGraph
+plot_layout(ncol = 1,nrow = 3)#save at 2500 x 4000
+
 #### End Time Point Stats ####
 
 #### Max Leaf Length Stats ####
@@ -576,10 +674,10 @@ leaf_thickness_model <- aov(leaf_thickness_TF ~ treatment, data = Leaf_Data_Join
 summary(leaf_thickness_model) #p=1.62e-05
 summary(glht(leaf_thickness_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-#### Figure 4: Traits Figure ####
+#### Figure 3: Traits Figure ####
 Leaf_Data_Join$treatment<-gsub("-"," ", Leaf_Data_Join$treatment)
 
-#### Figure 4A: SLA Graph ####
+#### Figure 3A: SLA Graph ####
 SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = SLA, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -597,7 +695,7 @@ SLA_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = SLA, fill= treatment)
   annotate("text", x=3, y=900, label = "b", size=20)+
   annotate("text", x=4, y=900, label = "b", size=20)
 
-#### Figure 4B: LDMC Graph ####
+#### Figure 3B: LDMC Graph ####
 LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = LDMC, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -615,7 +713,7 @@ LDMC_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = LDMC, fill= treatmen
   annotate("text", x=3, y=1.75, label = "b", size=20)+
   annotate("text", x=4, y=1.75, label = "b", size=20)
 
-#### Figure 4C: Leaf Thickness Graph ####
+#### Figure 3C: Leaf Thickness Graph ####
 LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = leaf_thickness, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
   #create axis labels
@@ -639,7 +737,7 @@ SLA_Graph+
   plot_layout(ncol = 1,nrow = 3)
 #save at 2000 x 3000
 
-#### Figure 5: Restoration Stats ####
+#### Figure 4: Restoration Stats ####
 
 #### Fuel Load Stats ####
 
@@ -663,9 +761,9 @@ leveneTest(total_ANPP_g_TF ~ treatment, data = NPP_Join) #p = 0.02268 so < 0.05 
 TotalANPP_model <- aov(total_ANPP_g_TF ~ treatment, data = NPP_Join)
 summary(TotalANPP_model) #p=0.114
 
-#### Figure 5: Restoration Figure ####
+#### Figure 4: Restoration Figure ####
 
-#### Figure 5A: Survival ####
+#### Figure 4A: Survival ####
 End_Time_Point_A_D$treatment<-gsub("-"," ", End_Time_Point_A_D$treatment)
 #stacked bar graph of final alive and dead by treatment - WITH percentages on bars
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") #palette
@@ -688,7 +786,7 @@ Survival_Graph<-ggplot(data=End_Time_Point_A_D %>%
   annotate("text", x=0.6, y=45, label = "A.", size=20)
 #save at 2000x20000
 
-#### ## Figure 5c. Fuel Load Graph ####
+#### ## Figure 4B. Fuel Load Graph ####
 NPP_Join$treatment<-gsub("-"," ", NPP_Join$treatment)
 Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= treatment)) +
   geom_boxplot(outlier.size=4,lwd=1) +
