@@ -295,9 +295,14 @@ Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_grou
 
 #looks best without transformations
 ols_test_normality(Normality_test_Temp) Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
+
 ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
-ols_test_normality(Normality_test_humidity) Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
-ols_test_normality(Normality_test_SM) Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)ols_plot_resid_hist(Normality_test_light) #looks best log transformed
+ols_test_normality(Normality_test_humidity) Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)
+
+ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
+ols_test_normality(Normality_test_SM) Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)
+
+ols_plot_resid_hist(Normality_test_light) #looks best log transformed
 ols_test_normality(Normality_test_light)
 
 #### Figure 1: Abiotics ####
