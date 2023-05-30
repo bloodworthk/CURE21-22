@@ -18,6 +18,9 @@ library(patchwork)
 #Bloodworth: mac
 setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
 
+#Young: laptop
+setwd("C:/Users/alyou/Box/SIDE PROJECTS/CURE21-22/CURE21-22/Data")
+
 #### Update ggplot2 theme ####
 #Update ggplot2 theme - make box around the x-axis title size 30, vertically justify x-axis title to 0.35, 
 #Place a margin of 15 around the x-axis title.  
@@ -257,34 +260,52 @@ MaxLL_Slopes<-Control_Control_Slopes_DF2 %>%
   rbind(heatwave_heatwave_Slopes_DF2) %>% 
   filter(slope>0) %>% 
   mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
-MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes)
+MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes$treatment)
 
 #### Clean up Abiotic Data ####
 
-#subset data
-AbioticSubsetwk1_9 <- Through_Time_Join_NCG %>%
-  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>%
-  filter(week_num<=9) %>%
-  mutate(overall_group=ifelse(overall_group=="Control-Control", "Control",ifelse(overall_group=="Control-Heatwave", "Control",ifelse(overall_group=="Heatwave-Control", "Heatwave",ifelse(overall_group=="Heatwave-Heatwave", "Heatwave", overall_group)))))
+# Average abiotic data so each treatment in each week has one averaged value#
+df1<-data.frame(overall_group="Heatwave-Heatwave", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
+df2<-data.frame(overall_group="Heatwave-Control", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
+df3<-data.frame(overall_group="Control-Heatwave", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
+df4<-data.frame(overall_group="Control-Control", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
 
-AbioticSubsetwk18_22 <- Through_Time_Join_NCG %>%
-  select(overall_group,spring_plant_ID,week_num,soil_moisture,light_avail,air_temp,humidity) %>%
-  filter(week_num>9)
-
-AbioticSubset<-Through_Time_Join_NCG%>%
-  #rbind(AbioticSubsetwk18_22) %>%
+AbioticSubsetTemp<-Through_Time_Join%>%
   group_by(overall_group,week_num) %>%
-  summarize(Air_Temp_std=sd(air_temp, na.rm = TRUE),Air_Temp_Mean=mean(air_temp, na.rm = TRUE),Air_Temp_n=length(air_temp),SM_std=sd(soil_moisture, na.rm = TRUE),SM_Mean=mean(soil_moisture, na.rm = TRUE),SM_n=length(soil_moisture),Light_std=sd(light_avail, na.rm = TRUE),Light_Mean=mean(light_avail, na.rm = TRUE),Light_n=length(light_avail),humidity_std=sd(humidity, na.rm = TRUE),humidity_Mean=mean(humidity, na.rm = TRUE),humidity_n=length(humidity)) %>%
-  mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n),SM_St_Error=SM_std/sqrt(SM_n),Light_St_Error=Light_std/sqrt(Light_n),humidity_St_Error=humidity_std/sqrt(humidity_n)) %>%
-  ungroup()
+  summarise(UniqueAirTemp = unique(air_temp)) %>%
+  group_by(overall_group,week_num) %>%
+  summarise(Air_Temp_std=sd(UniqueAirTemp, na.rm = TRUE),
+      Air_Temp_Mean=mean(UniqueAirTemp, na.rm = TRUE), Air_Temp_n=length(UniqueAirTemp)) %>%
+  mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n)) %>%
+  ungroup() %>%
+    rbind(df1) %>%
+  rbind(df2)%>%
+  rbind(df3)%>%
+  rbind(df4)
+AbioticSubsetTemp$week_num<-as.factor(AbioticSubsetTemp$week_num)
 
-AbioticSubset$week_num<-as.factor(AbioticSubset$week_num)
+
+AbioticSubsetHumidity<-Through_Time_Join%>%
+  group_by(overall_group,week_num) %>%
+  summarise(UniqueHumidity = unique(humidity)) %>%
+  group_by(overall_group,week_num) %>%
+  summarise(humidity_std=sd(UniqueHumidity, na.rm = TRUE),
+            humidity_Mean=mean(UniqueHumidity, na.rm = TRUE),humidity_n=length(UniqueHumidity)) %>%
+  mutate(humidity_St_Error=humidity_std/sqrt(humidity_n))
+AbioticSubsetHumidity$week_num<-as.factor(AbioticSubsetHumidity$week_num)
+
+
+
+
+ SM_std=sd(soil_moisture, na.rm = TRUE),SM_Mean=mean(soil_moisture, na.rm = TRUE),SM_n=length(soil_moisture),Light_std=sd(light_avail, na.rm = TRUE),Light_Mean=mean(light_avail, na.rm = TRUE),Light_n=length(light_avail),
+ SM_St_Error=SM_std/sqrt(SM_n),Light_St_Error=Light_std/sqrt(Light_n),humidity_St_Error=humidity_std/sqrt(humidity_n)) %>%
+  ungroup()
 
 
 #### Abiotic Stats ####
 
 #transform data
-Through_Time_Join_NCG<-Through_Time_Join_NCG %>%
+Through_Time_Join<-Through_Time_Join %>%
   #mutate(air_temp_TF=log10(air_temp)) %>%
   #transformation doesnt help - looks relatively normal 
   #mutate(humidity_TF=sqrt(humidity)) %>% #looks best without transformations 
@@ -292,20 +313,20 @@ Through_Time_Join_NCG<-Through_Time_Join_NCG %>%
   mutate(light_avail_TF=log10(light_avail))
 
 # check for normality #
-Normality_test_Temp <- lm(data = Through_Time_Join_NCG, air_temp  ~ overall_group)
+Normality_test_Temp <- lm(data = Through_Time_Join, air_temp  ~ overall_group)
 ols_plot_resid_hist(Normality_test_Temp) 
 
 #looks best without transformations
 ols_test_normality(Normality_test_Temp)
-Normality_test_humidity <- lm(data = Through_Time_Join_NCG, humidity  ~ overall_group)
+Normality_test_humidity <- lm(data = Through_Time_Join, humidity  ~ overall_group)
 
 ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
 ols_test_normality(Normality_test_humidity)
-Normality_test_SM <- lm(data = Through_Time_Join_NCG, soil_moisture_TF  ~ overall_group)
+Normality_test_SM <- lm(data = Through_Time_Join, soil_moisture_TF  ~ overall_group)
 
 ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
 ols_test_normality(Normality_test_SM) 
-Normality_test_light <- lm(data = Through_Time_Join_NCG, light_avail_TF  ~ overall_group)
+Normality_test_light <- lm(data = Through_Time_Join, light_avail_TF  ~ overall_group)
 
 ols_plot_resid_hist(Normality_test_light) #looks best log transformed
 ols_test_normality(Normality_test_light)
@@ -313,18 +334,17 @@ ols_test_normality(Normality_test_light)
 #### Figure 1: Abiotics ####
 
 #### Figure 1A. Temperature ####
-TempGraph <- ggplot(AbioticSubset,aes(x=week_num, y=Air_Temp_Mean,group=overall_group,color=overall_group))+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+  scale_shape_manual(values=c(15,16,17,18))+
-  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
+TempGraph <- ggplot(AbioticSubsetTemp,aes(x=week_num, y=Air_Temp_Mean,group=overall_group,color=overall_group))+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"), drop=FALSE)+  scale_shape_manual(values=c(15,16,17,18), drop=FALSE)+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"), drop=FALSE)+
   xlab("Week Number")+
-  ylab("Temperature (C)")+
-  10:51
-expand_limits(y=c(10,50))+
+  ylab("Air Temperature (C)")+
+  expand_limits(y=c(10,50))+
   annotate("text", x=2.2, y=50, label = "A. Air Temperature", size=20)+
   theme(legend.position = c(0.8,0.80),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
   #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  10:51
-theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  scale_x_discrete(labels=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"), breaks=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"), limits=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"))+
   annotate("text", x="3", y=40, label = "*", size=20)+
   annotate("text", x="4", y=40, label = "*", size=20)+
   annotate("text", x="18", y=28, label = "*", size=20)+
@@ -334,12 +354,13 @@ theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
 
 
 #### Figure 1B. Humidity ####
-HumidityGraph <- ggplot(AbioticSubset,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+
-  10:53
+HumidityGraph <- ggplot(AbioticSubsetHumidity,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+geom_point(aes(color=overall_group,shape=overall_group),size=15)+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+  geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2,size=4)+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+  scale_shape_manual(values=c(15,16,17,18))+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
+  xlab("Week Number")+
+  ylab("Humidity (%)")+
 annotate("text", x=1.6, y=100, label = "B. Humidity", size=20)+
   #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  10:53
+  annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
 theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
   annotate("text", x="3", y=100, label = "*", size=20)+
   annotate("text", x="4", y=100, label = "*", size=20)+
