@@ -491,3 +491,50 @@ survival_stacked_hasPercentage <- ggplot(data=End_Time_Point_CGRemoval %>%
             size=20) +
   theme(legend.title=element_blank()) + #remove legend title
   scale_fill_manual(values=c(cbPalette[3],cbPalette[7])) #set colors
+
+#mortality over time figure
+
+#separating by treatment before finding alive vs. dead because I can't think of a nicer way to do this
+survival_cc <- Through_Time_Join %>% 
+  filter(overall_group == "Control-Control")
+  
+survival_ch <- Through_Time_Join %>% 
+  filter(overall_group == "Control-Heatwave")
+  
+survival_hc <- Through_Time_Join %>% 
+  filter(overall_group == "Heatwave-Control")
+  
+survival_hh <- Through_Time_Join %>% 
+  filter(overall_group == "Heatwave-Heatwave")
+  
+
+#survival_cc_byweek <- survival_cc %>% 
+ # group_by(overall_group) %>% 
+  #summarize
+
+
+# finding alive and dead by treatment each week
+survival_sub <- Through_Time_Join %>% 
+  group_by(overall_group, week_num) %>% 
+  count(survival) %>% 
+  group_by(overall_group, survival)
+
+## trying to figure out why/how N goes from ~36 per treatment to ~60 per treatment between weeks 5 and 9
+plants_week5 <- Through_Time_Join %>% 
+  filter(overall_group == "Control-Control" & week_num == 5) #pulling out week 5 plants of control-control
+
+plants_week9 <- Through_Time_Join %>% 
+  filter(overall_group == "Control-Control" & week_num == 9) #pulling out week 9 plants of control-control
+
+plants_week9$spring_plant_ID[which(!(plants_week9 %in% plants_week5))] #looking for which c-c week 9 plants are NOT in week 5 plants
+
+
+#repeating the above with another treatment group to see if there's any relationships between the extra plants in each treatment
+plants_week5_hh <- Through_Time_Join %>% 
+  filter(overall_group == "Heatwave-Heatwave" & week_num == 5) #pulling out week 5 plants of heatwave-wave
+
+plants_week9_hh <- Through_Time_Join %>% 
+  filter(overall_group == "Heatwave-Heatwave" & week_num == 9) #pulling out week 9 plants of heatwave-heatwave
+
+plants_week9_hh$spring_plant_ID[which(!(plants_week9_hh %in% plants_week5_hh))] #looking for which h-h week 9 plants are NOT in week 5 plants
+#doesn't seem like these extra plants are related to the extra plants from the control-control treatment - what is going on?
