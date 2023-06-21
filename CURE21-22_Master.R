@@ -264,129 +264,248 @@ MaxLL_Slopes$treatment<-as.factor(MaxLL_Slopes$treatment)
 
 #### Clean up Abiotic Data ####
 
-# Average abiotic data so each treatment in each week has one averaged value#
-df1<-data.frame(overall_group="Heatwave-Heatwave", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
-df2<-data.frame(overall_group="Heatwave-Control", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
-df3<-data.frame(overall_group="Control-Heatwave", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
-df4<-data.frame(overall_group="Control-Control", week_num="10", Air_Temp_std=NA, Air_Temp_Mean=NA, Air_Temp_n=NA, Air_Temp_St_Error=NA)
+#create dataframes with no data for week 10 so that graph has more distance between week 9 and week 18 and with no data for week 18 to match soil moisture graph
+df_Temp = data.frame(overall_group=c("Heatwave-Heatwave","Heatwave-Control","Control-Heatwave","Control-Control","Heatwave-Heatwave","Heatwave-Control","Control-Heatwave","Control-Control"),week_num=c(10,10,10,10,18,18,18,18), Air_Temp_std=NA, Air_Temp_Mean=NA,Air_Temp_n=NA,Air_Temp_St_Error=NA)
 
-AbioticSubsetTemp<-Through_Time_Join%>%
+# Average abiotic data so each treatment in each week has one averaged value#
+#Temperature
+AbioticSubsetTemp_Stats<-Through_Time_Join%>%
+  filter(week_num!=18) %>% 
   group_by(overall_group,week_num) %>%
-  summarise(UniqueAirTemp = unique(air_temp)) %>%
+  summarise(UniqueAirTemp = unique(air_temp)) %>% 
+  ungroup()
+
+#Humidity
+AbioticSubsetHumidity_Stats<-Through_Time_Join%>%
+  filter(week_num!=18) %>%  
+  group_by(overall_group,week_num) %>%
+  summarise(UniqueHumidity = unique(humidity)) %>% 
+  ungroup()
+
+AbioticSubsetTemp<-AbioticSubsetTemp_Stats %>% 
   group_by(overall_group,week_num) %>%
   summarise(Air_Temp_std=sd(UniqueAirTemp, na.rm = TRUE),
       Air_Temp_Mean=mean(UniqueAirTemp, na.rm = TRUE), Air_Temp_n=length(UniqueAirTemp)) %>%
   mutate(Air_Temp_St_Error=Air_Temp_std/sqrt(Air_Temp_n)) %>%
   ungroup() %>%
-    rbind(df1) %>%
-  rbind(df2)%>%
-  rbind(df3)%>%
-  rbind(df4)
+    rbind(df_Temp)
 AbioticSubsetTemp$week_num<-as.factor(AbioticSubsetTemp$week_num)
 
-
-AbioticSubsetHumidity<-Through_Time_Join%>%
-  group_by(overall_group,week_num) %>%
-  summarise(UniqueHumidity = unique(humidity)) %>%
+AbioticSubsetHumidity<-AbioticSubsetHumidity_Stats %>% 
   group_by(overall_group,week_num) %>%
   summarise(humidity_std=sd(UniqueHumidity, na.rm = TRUE),
             humidity_Mean=mean(UniqueHumidity, na.rm = TRUE),humidity_n=length(UniqueHumidity)) %>%
-  mutate(humidity_St_Error=humidity_std/sqrt(humidity_n))
+  mutate(humidity_St_Error=humidity_std/sqrt(humidity_n)) %>% 
+  ungroup() 
 AbioticSubsetHumidity$week_num<-as.factor(AbioticSubsetHumidity$week_num)
 
-
-
-
- SM_std=sd(soil_moisture, na.rm = TRUE),SM_Mean=mean(soil_moisture, na.rm = TRUE),SM_n=length(soil_moisture),Light_std=sd(light_avail, na.rm = TRUE),Light_Mean=mean(light_avail, na.rm = TRUE),Light_n=length(light_avail),
- SM_St_Error=SM_std/sqrt(SM_n),Light_St_Error=Light_std/sqrt(Light_n),humidity_St_Error=humidity_std/sqrt(humidity_n)) %>%
+#Soil moisture
+AbioticSubsetSM<-Through_Time_Join%>%
+  group_by(overall_group,week_num) %>%
+  summarise(SM_std=sd(soil_moisture, na.rm = TRUE),
+            SM_Mean=mean(soil_moisture, na.rm = TRUE),
+            SM_n=length(soil_moisture)) %>%
+  mutate(SM_St_Error=SM_std/sqrt(SM_n)) %>% 
   ungroup()
+AbioticSubsetSM$week_num<-as.factor(AbioticSubsetSM$week_num)
 
+#Create one Dataframe 
+Abiotics<-AbioticSubsetTemp %>% 
+  left_join(AbioticSubsetHumidity) %>% 
+  left_join(AbioticSubsetSM) %>% 
+  mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 
-#### Abiotic Stats ####
+#### Soil Moisture Stats ####
 
 #transform data
 Through_Time_Join<-Through_Time_Join %>%
-  #mutate(air_temp_TF=log10(air_temp)) %>%
-  #transformation doesnt help - looks relatively normal 
-  #mutate(humidity_TF=sqrt(humidity)) %>% #looks best without transformations 
-  mutate(soil_moisture_TF=sqrt(soil_moisture)) %>%  
-  mutate(light_avail_TF=log10(light_avail))
+  mutate(soil_moisture_TF=log(soil_moisture)) %>% 
+  mutate(soil_moisture_TF2=sqrt(soil_moisture)) 
 
-# check for normality #
-Normality_test_Temp <- lm(data = Through_Time_Join, air_temp  ~ overall_group)
-ols_plot_resid_hist(Normality_test_Temp) 
+# check for normality SM#
+#Week 1
+Normality_test_SM_1 <- lm(data = subset(Through_Time_Join,week_num=="1"), soil_moisture_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_1) 
+ols_test_normality(Normality_test_SM_1) #normal
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="1"), soil_moisture_TF  ~ overall_group) 
 
-#looks best without transformations
-ols_test_normality(Normality_test_Temp)
-Normality_test_humidity <- lm(data = Through_Time_Join, humidity  ~ overall_group)
+#run model 
+SM_1 <- aov(data = subset(Through_Time_Join,week_num=="1"), soil_moisture_TF  ~ overall_group)
+summary(SM_1) #NS
 
-ols_plot_resid_hist(Normality_test_humidity) #looks best without transformations
-ols_test_normality(Normality_test_humidity)
-Normality_test_SM <- lm(data = Through_Time_Join, soil_moisture_TF  ~ overall_group)
 
-ols_plot_resid_hist(Normality_test_SM) #looks best with sqrt transformation
-ols_test_normality(Normality_test_SM) 
-Normality_test_light <- lm(data = Through_Time_Join, light_avail_TF  ~ overall_group)
+#Week 2
+Normality_test_SM_2 <- lm(data = subset(Through_Time_Join,week_num=="2"), soil_moisture_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_2) 
+ols_test_normality(Normality_test_SM_2) #normal
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="2"), soil_moisture_TF  ~ overall_group) #not met
 
-ols_plot_resid_hist(Normality_test_light) #looks best log transformed
-ols_test_normality(Normality_test_light)
+#run model 
+SM_2 <- aov(data = subset(Through_Time_Join,week_num=="2"), soil_moisture_TF  ~ overall_group)
+summary(SM_2) #significant
+
+#Week 3
+Normality_test_SM_3 <- lm(data = subset(Through_Time_Join,week_num=="3"), soil_moisture  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_3) 
+ols_test_normality(Normality_test_SM_3) #normal
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="3"), soil_moisture  ~ overall_group) #not met
+
+#run model 
+SM_3 <- aov(data = subset(Through_Time_Join,week_num=="3"), soil_moisture  ~ overall_group)
+summary(SM_3) #significant
+
+#Week 4
+Normality_test_SM_4 <- lm(data = subset(Through_Time_Join,week_num=="4"), soil_moisture  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_4) 
+ols_test_normality(Normality_test_SM_4) #normal
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="4"), soil_moisture  ~ overall_group)  #not met
+
+#run model 
+SM_4 <- aov(data = subset(Through_Time_Join,week_num=="4"), soil_moisture  ~ overall_group)
+summary(SM_4) #significant
+
+#Week 5
+Normality_test_SM_5 <- lm(data = subset(Through_Time_Join,week_num=="5"), soil_moisture_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_5) 
+ols_test_normality(Normality_test_SM_5) #normal
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="5"), soil_moisture_TF  ~ overall_group) #not met
+#run model 
+SM_5 <- aov(data = subset(Through_Time_Join,week_num=="5"), soil_moisture_TF  ~ overall_group)
+summary(SM_5) #significant
+
+#Week 9
+Normality_test_SM_9 <- lm(data = subset(Through_Time_Join,week_num=="9"), soil_moisture_TF2  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_9) 
+ols_test_normality(Normality_test_SM_9) #normal
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="9"), soil_moisture_TF2~ overall_group) #not met
+#run model 
+SM_9 <- aov(data = subset(Through_Time_Join,week_num=="9"), soil_moisture_TF2  ~ overall_group)
+summary(SM_9) #significant
+
+#Week 18
+Normality_test_SM_18 <- lm(data = subset(Through_Time_Join,week_num=="18"), soil_moisture_TF2 ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_18) 
+ols_test_normality(Normality_test_SM_18) #normalish
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="18"), soil_moisture_TF2  ~ overall_group) #NS
+
+#run model 
+SM_18 <- aov(data = subset(Through_Time_Join,week_num=="18"), soil_moisture_TF2  ~ overall_group)
+summary(SM_18) #significant
+
+#Week 19
+Normality_test_SM_19 <- lm(data = subset(Through_Time_Join,week_num=="19"), soil_moisture_TF2  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_19) 
+ols_test_normality(Normality_test_SM_19) #normalish
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="19"), soil_moisture_TF2  ~ overall_group) #NS
+#run model 
+SM_19 <- aov(data = subset(Through_Time_Join,week_num=="19"), soil_moisture_TF2  ~ overall_group)
+summary(SM_19) #significant
+
+#Week 20
+Normality_test_SM_20 <- lm(data = subset(Through_Time_Join,week_num=="20"), soil_moisture_TF2  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_20) 
+ols_test_normality(Normality_test_SM_20) #normalish
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="20"), soil_moisture_TF2  ~ overall_group)  #NS
+#run model 
+SM_20 <- aov(data = subset(Through_Time_Join,week_num=="20"), soil_moisture_TF2  ~ overall_group)
+summary(SM_20) #significant
+
+#Week 21
+Normality_test_SM_21 <- lm(data = subset(Through_Time_Join,week_num=="21"), soil_moisture_TF2  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_21) 
+ols_test_normality(Normality_test_SM_21) #normalish
+#check for homoscedascity
+leveneTest(data = subset(Through_Time_Join,week_num=="21"), soil_moisture_TF2  ~ overall_group)  #not met
+#run model 
+SM_21 <- aov(data = subset(Through_Time_Join,week_num=="21"), soil_moisture_TF2  ~ overall_group)
+summary(SM_21) #significant
+
+#Week 22
+Normality_test_SM_22 <- lm(data = subset(Through_Time_Join,week_num=="22"), soil_moisture_TF2  ~ overall_group)
+ols_plot_resid_hist(Normality_test_SM_22) 
+ols_test_normality(Normality_test_SM_22) #normalish
+#check for homoscedascity 
+leveneTest(data = subset(Through_Time_Join,week_num=="22"), soil_moisture_TF2  ~ overall_group) #NS
+#run model 
+SM_22 <- aov(data = subset(Through_Time_Join,week_num=="22"), soil_moisture_TF2  ~ overall_group)
+summary(SM_22) #significant
+
+
 
 #### Figure 1: Abiotics ####
 
 #### Figure 1A. Temperature ####
-TempGraph <- ggplot(AbioticSubsetTemp,aes(x=week_num, y=Air_Temp_Mean,group=overall_group,color=overall_group))+  geom_point(aes(color=overall_group,shape=overall_group),size=15)+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"), drop=FALSE)+  scale_shape_manual(values=c(15,16,17,18), drop=FALSE)+
+TempGraph <- ggplot(Abiotics,aes(x=week_num, y=Air_Temp_Mean,group=treatment,color=treatment))+
+  geom_point(aes(color=treatment,shape=treatment),size=15)+
+  geom_line(aes(color=treatment,linetype=treatment),size=4)+
+  geom_errorbar(aes(ymin=Air_Temp_Mean-Air_Temp_St_Error,ymax=Air_Temp_Mean+Air_Temp_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"), drop=FALSE)+
+  scale_shape_manual(values=c(15,16,17,18), drop=FALSE)+
   scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"), drop=FALSE)+
   xlab("Week Number")+
   ylab("Air Temperature (C)")+
   expand_limits(y=c(10,50))+
   annotate("text", x=2.2, y=50, label = "A. Air Temperature", size=20)+
-  theme(legend.position = c(0.8,0.80),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
+  theme(legend.position = c(0.89,0.85),legend.key = element_rect(size=20), legend.key.size = unit(5.0, 'lines'),legend.title = element_blank())+
   #add in rectangle around heatwave
   annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
   theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  scale_x_discrete(labels=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"), breaks=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"), limits=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"))+
-  annotate("text", x="3", y=40, label = "*", size=20)+
-  annotate("text", x="4", y=40, label = "*", size=20)+
-  annotate("text", x="18", y=28, label = "*", size=20)+
-  annotate("text", x="19", y=28, label = "*", size=20)+
-  annotate("text", x="20", y=28, label = "*", size=20)+
-  annotate("text", x="22", y=28, label = "*", size=20)
+  scale_x_discrete(labels=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"), breaks=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"), limits=c("1", "2", "3", "4", "5", "9", "10", "18", "19", "20", "21", "22"))
 
 
 #### Figure 1B. Humidity ####
-HumidityGraph <- ggplot(AbioticSubsetHumidity,aes(x=week_num, y=humidity_Mean,group=overall_group,color=overall_group))+geom_point(aes(color=overall_group,shape=overall_group),size=15)+  geom_line(aes(color=overall_group,linetype=overall_group),size=4)+  geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2,size=4)+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+  scale_shape_manual(values=c(15,16,17,18))+
+HumidityGraph <- ggplot(Abiotics,aes(x=week_num, y=humidity_Mean,group=treatment,color=treatment))+
+  geom_point(aes(color=treatment,shape=treatment),size=15)+
+  geom_line(aes(color=treatment,linetype=treatment),size=4)+
+  geom_errorbar(aes(ymin=humidity_Mean-humidity_St_Error,ymax=humidity_Mean+humidity_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"))+
+  scale_shape_manual(values=c(15,16,17,18))+
   scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"))+
   xlab("Week Number")+
   ylab("Humidity (%)")+
 annotate("text", x=1.6, y=100, label = "B. Humidity", size=20)+
   #add in rectangle around heatwave
   annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
-  annotate("text", x="3", y=100, label = "*", size=20)+
-  annotate("text", x="4", y=100, label = "*", size=20)+
-  #annotate("text", x=18, y=28, label = "*", size=20)+
-  annotate("text", x="19", y=100, label = "*", size=20)+
-  annotate("text", x="20", y=100, label = "*", size=20)+
-  annotate("text", x="22", y=100, label = "*", size=20)
+theme(axis.title.x=element_blank(), axis.text.x = element_blank())
 
 #### Figure 1C. Soil Moisture ####
-SMGraph <- ggplot(AbioticSubset,aes(x=week_num, y=SM_Mean,group=overall_group,color=overall_group))+
+SMGraph <-ggplot(Abiotics,aes(x=week_num, y=SM_Mean,group=treatment,color=treatment))+
+  geom_point(aes(color=treatment,shape=treatment),size=15)+
+  geom_line(aes(color=treatment,linetype=treatment),size=4)+
+  geom_errorbar(aes(ymin=SM_Mean-SM_St_Error,ymax=SM_Mean+SM_St_Error),width=0.2,size=4)+
+  scale_linetype_manual(values=c("solid","longdash","twodash","dashed"), drop=FALSE)+
+  scale_shape_manual(values=c(15,16,17,18), drop=FALSE)+
+  scale_color_manual(values=c("#76AFE8","#E6E291","#88A76E","#CA7E77"), drop=FALSE)+
   annotate("text", x=1.9, y=20, label = "C. Soil Moisture", size=20)+
+  xlab("Week Number")+
+  ylab("Soil Moisture (%)")+
   #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","18"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  theme(axis.title.x=element_blank(), axis.text.x = element_blank())+
+  annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
+  annotate("text", x="2", y=15, label = "*", size=20)+
   annotate("text", x="3", y=15, label = "*", size=20)+
   annotate("text", x="4", y=15, label = "*", size=20)+
-  #annotate("text", x=18, y=28, label = "*", size=20)+
+  annotate("text", x="5", y=15, label = "*", size=20)+
+  annotate("text", x="9", y=15, label = "*", size=20)+
+  annotate("text", x="18", y=15, label = "*", size=20)+
   annotate("text", x="19", y=15, label = "*", size=20)+
   annotate("text", x="20", y=15, label = "*", size=20)+
   annotate("text", x="22", y=15, label = "*", size=20)
 
 #### Create Figure 1 #### 
+
 TempGraph+
   HumidityGraph+
-  SMGraph
-plot_layout(ncol = 1,nrow = 3)#save at 2500 x 4000
+  SMGraph+
+  plot_layout(ncol = 1,nrow = 3)#save at 3000 x 4000
 
 #### End Time Point Stats ####
 
@@ -436,7 +555,7 @@ leaf_num_model <- aov(leaf_num ~ treatment, data = End_Time_Point)
 summary(leaf_num_model) #p=2.48e-09 
 summary(glht(leaf_num_model, linfct = mcp(treatment = "Tukey")), test = adjusted(type = "BH"))
 
-#### Max Leaf Length Lingle TP GGrowth Rate Stats #####
+#### Max Leaf Length Single TP GGrowth Rate Stats #####
 
 # check for normality #
 #non transformed data
@@ -838,3 +957,118 @@ Survival_Graph +
   Fuel_Load_Graph +
   plot_layout(ncol = 1,nrow = 2)
 #save at 1500 x 3000
+
+
+##### Not using -- stats for temp and humidity ####
+#transform data
+AbioticSubsetTemp_Stats<-AbioticSubsetTemp_Stats %>%
+  mutate(UniqueAirTemp_TF=log(UniqueAirTemp)) %>% 
+  mutate(UniqueAirTemp_TF2=asin(UniqueAirTemp))
+
+# check for normality Temp#
+#Week 1
+Normality_test_Temp_1 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="1"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_1) 
+ols_test_normality(Normality_test_Temp_1) #only 2 datapoints
+
+#Week 2
+Normality_test_Temp_2 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="2"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_2) 
+ols_test_normality(Normality_test_Temp_2) #only 1 datapoint
+
+#Week 3
+Normality_test_Temp_3 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="3"), UniqueAirTemp_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_3) 
+ols_test_normality(Normality_test_Temp_3) #as normal as I can get it
+
+#Week 4
+Normality_test_Temp_4 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="4"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_4) 
+ols_test_normality(Normality_test_Temp_4) #as normal as I can get it
+
+#Week 5
+Normality_test_Temp_5 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="5"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_5) 
+ols_test_normality(Normality_test_Temp_5) #as normal as I can get it
+
+#Week 9
+Normality_test_Temp_9 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="9"), UniqueAirTemp_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_9) 
+ols_test_normality(Normality_test_Temp_9) #as normal as I can get it
+
+#Week 19
+Normality_test_Temp_19 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="19"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_19) 
+ols_test_normality(Normality_test_Temp_19) #as normal as I can get it
+
+#Week 20
+Normality_test_Temp_20 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="20"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_20) 
+ols_test_normality(Normality_test_Temp_20) #as normal as I can get it
+
+#Week 21
+Normality_test_Temp_21 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="21"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_21) 
+ols_test_normality(Normality_test_Temp_21) #as normal as I can get it
+
+#Week 22
+Normality_test_Temp_22 <- lm(data = subset(AbioticSubsetTemp_Stats,week_num=="22"), UniqueAirTemp  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Temp_22) 
+ols_test_normality(Normality_test_Temp_22) #to low sample size
+
+
+# check for normality Humidity#
+#transform data
+AbioticSubsetHumidity_Stats<-AbioticSubsetHumidity_Stats %>%
+  mutate(UniqueHumidity_TF=1/log(UniqueHumidity)) %>% 
+  mutate(UniqueHumidity_TF2=sqrt(UniqueHumidity))
+
+#Week 1
+Normality_test_Humidity_1 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="1"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_1) 
+ols_test_normality(Normality_test_Humidity_1) #only 2 datapoints
+
+#Week 2
+Normality_test_Humidity_2 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="2"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_2) 
+ols_test_normality(Normality_test_Humidity_2) #only 2 datapoint
+
+#Week 3
+Normality_test_Humidity_3 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="3"), UniqueHumidity_TF  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_3) 
+ols_test_normality(Normality_test_Humidity_3) #as normal as I can get it
+
+#Week 4
+Normality_test_Humidity_4 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="4"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_4) 
+ols_test_normality(Normality_test_Humidity_4) #not enough data
+
+#Week 5
+Normality_test_Humidity_5 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="5"), UniqueHumidity_TF2  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_5) 
+ols_test_normality(Normality_test_Humidity_5) #as normal as I can get it
+
+#Week 9
+Normality_test_Humidity_9 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="9"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_9) 
+ols_test_normality(Normality_test_Humidity_9) #as normal as I can get it
+
+#Week 19
+Normality_test_Humidity_19 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="19"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_19) 
+ols_test_normality(Normality_test_Humidity_19) #not enough data
+
+#Week 20
+Normality_test_Humidity_20 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="20"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_20) 
+ols_test_normality(Normality_test_Humidity_20) #not enough data
+
+#Week 21
+Normality_test_Humidity_21 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="21"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_21) 
+ols_test_normality(Normality_test_Humidity_21) #as normal as I can get it
+
+#Week 22
+Normality_test_Humidity_22 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="22"), UniqueHumidity  ~ overall_group)
+ols_plot_resid_hist(Normality_test_Humidity_22) 
+ols_test_normality(Normality_test_Humidity_22) #not enough data
