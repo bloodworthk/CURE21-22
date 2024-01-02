@@ -1072,3 +1072,4 @@ ols_test_normality(Normality_test_Humidity_21) #as normal as I can get it
 Normality_test_Humidity_22 <- lm(data = subset(AbioticSubsetHumidity_Stats,week_num=="22"), UniqueHumidity  ~ overall_group)
 ols_plot_resid_hist(Normality_test_Humidity_22) 
 ols_test_normality(Normality_test_Humidity_22) #not enough data
+
