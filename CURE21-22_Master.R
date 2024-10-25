@@ -2,6 +2,7 @@
 
 
 #### Load in packages ####
+library(rstatix)
 library(githubinstall)
 library(ggplot2)
 library(lmerTest)
@@ -16,7 +17,7 @@ library(patchwork)
 
 #### Set working directory ####
 #Bloodworth: mac
-setwd("/Users/kathrynbloodworth/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
+setwd("/Users/kjbloodw/Library/CloudStorage/Box-Box/Projects/CURE_2021-2022/Data")
 
 #Young: laptop
 setwd("C:/Users/alyou/Box/SIDE PROJECTS/CURE21-22/CURE21-22/Data")
@@ -74,6 +75,11 @@ Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.s
   full_join(Biomass_Removed) %>% 
   filter(is.na(biomass_removed)) %>% 
   select(-c(notes,biomass_removed))
+
+#read in enzyme assay data ####
+Enzyme_Data <- read.csv("CURE data_enzyme_assays_forR.csv", header = TRUE, na.strings = "") %>% 
+  mutate(Treatment=ifelse(Treatment=="FC SC","Control",ifelse(Treatment=="FC SH","Early HW",ifelse(Treatment=="FH SC","Late HW",ifelse(Treatment=="FH SH","Two HWs",Treatment))))) %>% 
+  mutate(Measurement_Timing=ifelse(Measurement_Timing=="BT","Before",ifelse(Measurement_Timing=="AT","After",Measurement_Timing)))
 
 
 #### Clean Up Biomass Removed Data and add to Plant_ID####
@@ -957,6 +963,416 @@ Survival_Graph +
   Fuel_Load_Graph +
   plot_layout(ncol = 1,nrow = 2)
 #save at 1500 x 3000
+
+#### Enzyme Data Manipulation ####
+Enzyme_Ratios <- Enzyme_Data %>% 
+  pivot_wider(names_from = Measurement_Timing,
+              values_from = c(Peroxidase,Catalase, MDA)) %>% 
+  mutate(Peroxidase_PercentChange=((Peroxidase_After-Peroxidase_Before)/Peroxidase_Before*100),
+         Catalase_PercentChange=((Catalase_After-Catalase_Before)/Catalase_Before*100),
+         MDA_PercentChange=((MDA_After-MDA_Before)/MDA_Before*100) 
+  ) %>% 
+  mutate(Treatment_Fact=as.factor(Treatment))
+  #dplyr::select(Treatment,Replicate,Peroxidase_PercentChange,Catalase_PercentChange,MDA_PercentChange)
+
+#### Enzyme Percent Change Stats: Peroxidase ####
+
+Peroxidase_Ratios<-Enzyme_Ratios %>% 
+  filter(Peroxidase_PercentChange>-15883)
+
+#check for normality #
+#non transformed data
+Normality_test_EnzymeRatio_Per <- lm(data = Peroxidase_Ratios, (Peroxidase_PercentChange)  ~ Treatment)
+ols_plot_resid_hist(Normality_test_EnzymeRatio_Per) 
+ols_test_normality(Normality_test_EnzymeRatio_Per)
+
+#check for homoscedascity
+leveneTest((Peroxidase_PercentChange)  ~ Treatment, data = Enzyme_Ratios)
+
+#run model 
+EnzymeRatio_Per_model <- aov(log(Peroxidase_PercentChange)  ~ Treatment, data = Peroxidase_Ratios)
+summary(EnzymeRatio_Per_model) #p=0.174
+
+#### Enzyme Percent Change Stats: Catalase ####
+
+#check for normality #
+#non transformed data
+Normality_test_EnzymeRatio_Cat <- lm(data = Enzyme_Ratios, (Catalase_PercentChange)  ~ Treatment)
+ols_plot_resid_hist(Normality_test_EnzymeRatio_Cat) 
+ols_test_normality(Normality_test_EnzymeRatio_Cat)
+
+#check for homoscedascity
+leveneTest((Catalase_PercentChange)  ~ Treatment, data = Enzyme_Ratios)
+
+#run model 
+EnzymeRatio_Cat_model <- aov((Catalase_PercentChange)  ~ Treatment_Fact, data = Enzyme_Ratios)
+summary(EnzymeRatio_Cat_model) #p=0.00321
+TukeyHSD(EnzymeRatio_Cat_model)
+        
+#### Enzyme Percent Change Stats: MDA ####
+
+#check for normality #
+#non transformed data
+Normality_test_EnzymeRatio_MDA <- lm(data = Enzyme_Ratios, (MDA_PercentChange)  ~ Treatment)
+ols_plot_resid_hist(Normality_test_EnzymeRatio_MDA) 
+ols_test_normality(Normality_test_EnzymeRatio_MDA)
+
+#check for homoscedascity
+leveneTest((MDA_PercentChange)  ~ Treatment, data = Enzyme_Ratios)
+
+#run model 
+EnzymeRatio_MDA_model <- aov((MDA_PercentChange)  ~ Treatment, data = Enzyme_Ratios)
+summary(EnzymeRatio_MDA_model) #p=6.26E-05
+TukeyHSD(EnzymeRatio_MDA_model)
+
+#### Figure XX. Enzyme Percent Change: Peroxidase ####
+Peroxidase_Ratio_Graph<-ggplot(Peroxidase_Ratios, aes(x = Treatment, y = Peroxidase_PercentChange, fill= Treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Percent Change of Peroxidase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(-2500,2500))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=2500, label = "A.", size=20)
+
+#### Figure XX. Enzyme Percent Change: Catalase ####
+Catalase_Ratio_Graph<-ggplot(Enzyme_Ratios, aes(x = Treatment, y = Catalase_PercentChange, fill= Treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Percent Change of Catalase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,500))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=500, label = "B.", size=20)
+
+#### Figure XX. Enzyme Percent Change: MDA ####
+MDA_Ratio_Graph<-ggplot(Enzyme_Ratios, aes(x = Treatment, y = MDA_PercentChange, fill= Treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Percent Change of MDA") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,100))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=100, label = "C.", size=20)
+
+#Create Figure
+Peroxidase_Ratio_Graph +
+  Catalase_Ratio_Graph +
+  MDA_Ratio_Graph +
+  plot_layout(ncol = 1,nrow = 3)
+#save at 2000 x 4000
+
+
+#### Enzyme Paired T-Test ####
+
+#### Enzyme Paired T-Test Stats: Peroxidase ####
+
+Peroxidase_Long<-Peroxidase_Ratios %>% 
+  dplyr::select(Treatment,Replicate,Peroxidase_After,Peroxidase_Before) %>% 
+  pivot_longer(cols=c("Peroxidase_After","Peroxidase_Before"),
+               names_to = "Timing",
+               values_to = "Peroxidase") %>% 
+  mutate(Timing=ifelse(Timing=="Peroxidase_After","After",ifelse(Timing=="Peroxidase_Before","Before",Timing))) %>% 
+  mutate(Sample=paste(Treatment,Replicate,sep="."))
+
+ggboxplot(Peroxidase_Long, x = "Treatment", y = "Peroxidase",
+           color = "Timing", palette = "jco")
+
+
+#check for normality #
+#non transformed data
+Normality_test_Paired_Per <- lm(data = Peroxidase_Long, Peroxidase  ~ Timing*Treatment)
+ols_plot_resid_hist(Normality_test_Paired_Per) 
+ols_test_normality(Normality_test_Paired_Per)
+
+#check for homoscedascity
+leveneTest(data = Peroxidase_Long, Peroxidase  ~ Treatment)
+
+#run model 
+Paired_Per_Anova <- anova_test(
+  data = Peroxidase_Long, dv = Peroxidase, wid = Sample, #dv=dependent variable, wid=identifer
+  within = Timing,
+  between = Treatment
+)
+get_anova_table(Paired_Per_Anova)
+
+
+summary(Per_Timing<-aov(Peroxidase ~ Timing, data=Peroxidase_Long)) #NS
+
+summary(Per_Trt<-aov(Peroxidase ~ Treatment, data=Peroxidase_Long)) #NS
+
+
+#### Enzyme Paired T-Test Stats: Catalase ####
+
+Catalase_Long<-Enzyme_Ratios %>% 
+  dplyr::select(Treatment,Replicate,Catalase_After,Catalase_Before) %>% 
+  pivot_longer(cols=c("Catalase_After","Catalase_Before"),
+               names_to = "Timing",
+               values_to = "Catalase") %>% 
+  mutate(Timing=ifelse(Timing=="Catalase_After","After",ifelse(Timing=="Catalase_Before","Before",Timing))) %>% 
+  mutate(Sample=paste(Treatment,Replicate,sep=".")) %>% 
+  mutate(Catalase_Log=log(Catalase))
+
+ggboxplot(Catalase_Long, x = "Treatment", y = "Catalase",
+  color = "Timing", palette = "jco")
+
+#check for normality #
+#non transformed data
+Normality_test_Paired_Cat <- lm(data = Catalase_Long, log(Catalase)  ~ Timing*Treatment)
+ols_plot_resid_hist(Normality_test_Paired_Cat) 
+ols_test_normality(Normality_test_Paired_Cat) #good enough
+
+#check for homoscedascity
+leveneTest(data = Catalase_Long, log(Catalase)  ~ Timing*Treatment)
+
+#run model 
+Paired_Cat_Anova <- anova_test(
+  data = Catalase_Long, dv = Catalase_Log, wid = Sample, #dv=dependent variable, wid=identifer
+  within = Timing,
+  between = Treatment
+)
+get_anova_table(Paired_Cat_Anova)
+
+#posthoc test
+# Pairwise comparisons between group levels
+pwc_Cat <- Catalase_Long %>%
+  group_by(Timing) %>%
+  pairwise_t_test(Catalase_Log ~ Treatment, p.adjust.method = "bonferroni")
+pwc_Cat
+
+# Pairwise comparisons between group levels
+pwc_CatTiming <- Catalase_Long %>%
+  group_by(Treatment) %>%
+  pairwise_t_test(Catalase_Log ~ Timing, p.adjust.method = "bonferroni")
+pwc_CatTiming
+
+
+summary(Cat_Timing<-aov(Catalase_Log~ Timing, data=Catalase_Long)) #significant
+
+summary(Cat_Trt<-aov(Catalase_Log ~ Treatment, data=Catalase_Long)) #not significant
+
+#### Enzyme Paired T-Test Stats: MDA ####
+
+MDA_Long<-Enzyme_Ratios %>% 
+  dplyr::select(Treatment,Replicate,MDA_After,MDA_Before) %>% 
+  pivot_longer(cols=c("MDA_After","MDA_Before"),
+               names_to = "Timing",
+               values_to = "MDA") %>% 
+  mutate(Timing=ifelse(Timing=="MDA_After","After",ifelse(Timing=="MDA_Before","Before",Timing))) %>% 
+  mutate(Sample=paste(Treatment,Replicate,sep=".")) %>% 
+  mutate(Timing = factor(Timing, levels=c("Before","After")))
+
+ggboxplot(MDA_Long, x = "Treatment", y = "MDA",
+          color = "Timing", palette = "jco")
+
+#check for normality #
+#non transformed data
+Normality_test_Paired_MDA <- lm(data = MDA_Long, MDA  ~ Timing*Treatment)
+ols_plot_resid_hist(Normality_test_Paired_MDA) 
+ols_test_normality(Normality_test_Paired_MDA)
+
+#check for homoscedascity
+leveneTest(data = MDA_Long, MDA  ~ Timing*Treatment)
+
+#run model 
+Paired_MDA_Anova <- anova_test(
+  data = MDA_Long, dv = MDA, wid = Sample, #dv=dependent variable, wid=identifer
+  within = Timing,
+  between = Treatment
+)
+get_anova_table(Paired_MDA_Anova) #all significant
+
+summary(MDA_Timing<-aov(MDA ~ Timing, data=MDA_Long))
+
+summary(MDA_Trt<-aov(MDA ~ Treatment, data=MDA_Long))
+TukeyHSD(MDA_Trt,"Treatment")
+
+# Pairwise comparisons between group levels
+pwc_MDA <- MDA_Long %>%
+  group_by(Timing) %>%
+  pairwise_t_test(MDA ~ Treatment, p.adjust.method = "bonferroni")
+pwc_MDA
+
+# Pairwise comparisons between group levels
+pwc_MDATiming <- MDA_Long %>%
+  group_by(Treatment) %>%
+  pairwise_t_test(MDA ~ Timing, p.adjust.method = "bonferroni")
+pwc_MDATiming
+
+
+
+#### Figure XX. Enzyme Paired: Peroxidase ####
+Peroxidase_Long$Timing <- factor(Peroxidase_Long$Timing, levels=c("Before","After"))
+
+Peroxidase_Graph<-ggplot(Peroxidase_Long, aes(x = Treatment, y = Peroxidase, fill = Timing)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Peroxidase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,2))+
+  theme(legend.title = element_blank(),legend.position = c(0.84,0.94),axis.title.x = element_blank(),axis.text.x=element_blank()) +
+  #change color of treatments
+  scale_fill_manual(values=c("#D89797","#795663"),labels=c("Before Late HW","After Late HW")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=2, label = "A.", size=20)
+
+#### Figure XX. Enzyme Paired: Catalase ####
+Catalase_Long$Timing <- factor(Catalase_Long$Timing, levels=c("Before","After"))
+
+Catalase_Graph<-ggplot(Catalase_Long, aes(x = Treatment, y = Catalase, fill = Timing)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Catalase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,6))+
+  theme(legend.title = element_blank(),legend.position = "NONE",axis.title.x = element_blank(),axis.text.x=element_blank()) +
+  #change color of treatments
+  scale_fill_manual(values=c("#D89797","#795663"),labels=c("Before HW2","After HW2")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=6.5, label = "B.", size=20)
+
+#### Figure XX. Enzyme Paired: MDA ####
+MDA_Long$Timing <- factor(MDA_Long$Timing, levels=c("Before","After"))
+
+MDA_Graph<-ggplot(MDA_Long, aes(x = Treatment, y = MDA, fill = Timing)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="MDA") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(50,150))+
+  theme(legend.title = element_blank(),legend.position = "NONE") +
+  #change color of treatments
+  scale_fill_manual(values=c("#D89797","#795663"),labels=c("Before HW2","After HW2")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=150, label = "C.", size=20)
+
+
+#Create Figure
+Peroxidase_Graph +
+  Catalase_Graph +
+  MDA_Graph +
+  plot_layout(ncol = 1,nrow = 3)
+#save at 2000 x 4000
+
+
+
+#### Figure XX. Enzyme Treatment: Peroxidase ####
+
+Peroxidase_Graph_Trt<-ggplot(Peroxidase_Long, aes(x = Treatment, y = Peroxidase, fill=Treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels 
+  labs(x = "Treatment",y ="Peroxidase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,2))+
+  theme(axis.title.x = element_blank(),axis.text.x=element_blank()) +
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=2, label = "A.", size=20)
+
+#### Figure XX. Enzyme Treatment: Catalase ####
+Catalase_Graph_Trt<-ggplot(Catalase_Long, aes(x = Treatment, y = Catalase, fill=Treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="Catalase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,8))+
+  theme(axis.title.x = element_blank(),axis.text.x=element_blank()) +
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=8, label = "B.", size=20)
+
+#### Figure XX. Enzyme Treatment: MDA ####
+
+MDA_Graph_Trt<-ggplot(MDA_Long, aes(x = Treatment, y = MDA, fill=Treatment)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Treatment",y ="MDA") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,150))+
+  #change color of treatments
+  scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.6, y=150, label = "C.", size=20)
+
+
+#Create Figure
+Peroxidase_Graph_Trt +
+  Catalase_Graph_Trt +
+  MDA_Graph_Trt +
+  plot_layout(ncol = 1,nrow = 3)
+#save at 2000 x 2500
+
+
+
+
+#### Figure XX. Enzyme Timing: Peroxidase ####
+
+Peroxidase_Graph_Timing<-ggplot(Peroxidase_Long, aes(x = Timing, y = Peroxidase, fill=Timing)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels 
+  labs(x = "Timing",y ="Peroxidase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,2))+
+  theme(axis.title.x = element_blank(),axis.text.x=element_blank()) +
+  #change color of Timings
+  scale_fill_manual(values=c("#D89797","#795663"),labels=c("Before HW2","After HW2")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.5, y=2, label = "A.", size=20)
+
+#### Figure XX. Enzyme Timing: Catalase ####
+Catalase_Graph_Timing<-ggplot(Catalase_Long, aes(x = Timing, y = Catalase, fill=Timing)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Timing",y ="Catalase") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,8))+
+  theme(axis.title.x = element_blank(),axis.text.x=element_blank()) +
+  #change color of Timings
+  scale_fill_manual(values=c("#D89797","#795663"),labels=c("Before HW2","After HW2")) +
+  #wrap text for x axis ticks using stringr package
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
+  annotate("text", x=0.5, y=8, label = "B.", size=20)
+
+#### Figure XX. Enzyme Timing: MDA ####
+
+MDA_Graph_Timing<-ggplot(MDA_Long, aes(x = Timing, y = MDA, fill=Timing)) +
+  geom_boxplot(outlier.size=4,lwd=1) +
+  #create axis labels
+  labs(x = "Timing",y ="MDA") +
+  #expand limits of graph so that the y axis goes up to 800 to encompass all points
+  expand_limits(y=c(0,150))+
+  #change color of Timings
+  scale_fill_manual(values=c("#D89797","#795663"),labels=c("Before HW2","After HW2")) +
+  scale_x_discrete(labels=c("Before HW2","After HW2"))+
+  annotate("text", x=0.5, y=150, label = "C.", size=20)
+
+
+#Create Figure
+Peroxidase_Graph_Timing +
+  Catalase_Graph_Timing +
+  MDA_Graph_Timing +
+  plot_layout(ncol = 1,nrow = 3)
+#save at 2000 x 2500
+
+
 
 
 ##### Not using -- stats for temp and humidity ####
