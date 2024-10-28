@@ -76,7 +76,7 @@ Leaf_Data <- read.csv("spring2022_llp315cure_Leafcombo.csv", header = TRUE, na.s
   filter(is.na(biomass_removed)) %>% 
   select(-c(notes,biomass_removed))
 
-#read in enzyme assay data ####
+#read in enzyme assay data
 Enzyme_Data <- read.csv("CURE data_enzyme_assays_forR.csv", header = TRUE, na.strings = "") %>% 
   mutate(Treatment=ifelse(Treatment=="FC SC","Control",ifelse(Treatment=="FC SH","Early HW",ifelse(Treatment=="FH SC","Late HW",ifelse(Treatment=="FH SH","Two HWs",Treatment))))) %>% 
   mutate(Measurement_Timing=ifelse(Measurement_Timing=="BT","Before",ifelse(Measurement_Timing=="AT","After",Measurement_Timing)))
@@ -990,7 +990,7 @@ ols_test_normality(Normality_test_EnzymeRatio_Per)
 leveneTest((Peroxidase_PercentChange)  ~ Treatment, data = Enzyme_Ratios)
 
 #run model 
-EnzymeRatio_Per_model <- aov(log(Peroxidase_PercentChange)  ~ Treatment, data = Peroxidase_Ratios)
+EnzymeRatio_Per_model <- aov((Peroxidase_PercentChange)  ~ Treatment, data = Peroxidase_Ratios)
 summary(EnzymeRatio_Per_model) #p=0.174
 
 #### Enzyme Percent Change Stats: Catalase ####
