@@ -978,7 +978,8 @@ Enzyme_Ratios <- Enzyme_Data %>%
 #### Enzyme Percent Change Stats: Peroxidase ####
 
 Peroxidase_Ratios<-Enzyme_Ratios %>% 
-  filter(Peroxidase_PercentChange>-15883)
+  filter(Peroxidase_PercentChange>-2080) %>% 
+  filter(Peroxidase_PercentChange<1033) #removes 4 outliers
 
 #check for normality #
 #non transformed data
@@ -1031,12 +1032,12 @@ Peroxidase_Ratio_Graph<-ggplot(Peroxidase_Ratios, aes(x = Treatment, y = Peroxid
   #create axis labels
   labs(x = "Treatment",y ="Percent Change of Peroxidase") +
   #expand limits of graph so that the y axis goes up to 800 to encompass all points
-  expand_limits(y=c(-2500,2500))+
+  expand_limits(y=c(-100,500))+
   #change color of treatments
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=2500, label = "A.", size=20)
+  annotate("text", x=0.6, y=500, label = "A.", size=20)
 
 #### Figure XX. Enzyme Percent Change: Catalase ####
 Catalase_Ratio_Graph<-ggplot(Enzyme_Ratios, aes(x = Treatment, y = Catalase_PercentChange, fill= Treatment)) +
