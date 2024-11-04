@@ -1006,9 +1006,9 @@ ols_test_normality(Normality_test_EnzymeRatio_Cat)
 leveneTest((Catalase_PercentChange)  ~ Treatment, data = Enzyme_Ratios)
 
 #run model 
-EnzymeRatio_Cat_model <- aov((Catalase_PercentChange)  ~ Treatment_Fact, data = Enzyme_Ratios)
+EnzymeRatio_Cat_model <- aov(Catalase_PercentChange  ~ Treatment_Fact, data = Enzyme_Ratios)
 summary(EnzymeRatio_Cat_model) #p=0.00321
-TukeyHSD(EnzymeRatio_Cat_model)
+summary(glht(EnzymeRatio_Cat_model, linfct = mcp(Treatment_Fact = "Tukey")), test = adjusted(type = "BH"))
 
 #### Figure 5. Enzyme Percent Change: Peroxidase ####
 Peroxidase_Ratio_Graph<-ggplot(Peroxidase_Ratios, aes(x = Treatment, y = Peroxidase_PercentChange, fill= Treatment)) +
@@ -1022,7 +1022,11 @@ Peroxidase_Ratio_Graph<-ggplot(Peroxidase_Ratios, aes(x = Treatment, y = Peroxid
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
   theme(legend.title=element_blank(),legend.position = "NONE",axis.title.x=element_blank(), axis.text.x = element_blank()) +
-  annotate("text", x=0.6, y=600, label = "A.", size=20)
+  annotate("text", x=0.6, y=600, label = "A.", size=20)+
+  annotate("text", x=1, y=580, label = "a", size=20)+
+  annotate("text", x=2, y=580, label = "a", size=20)+
+  annotate("text", x=3, y=580, label = "a", size=20)+
+  annotate("text", x=4, y=580, label = "a", size=20)
 
 #### Figure 5. Enzyme Percent Change: Catalase ####
 Catalase_Ratio_Graph<-ggplot(Enzyme_Ratios, aes(x = Treatment, y = Catalase_PercentChange, fill= Treatment)) +
@@ -1035,7 +1039,11 @@ Catalase_Ratio_Graph<-ggplot(Enzyme_Ratios, aes(x = Treatment, y = Catalase_Perc
   scale_fill_manual(values=c( "#76AFE8","#88A76E","#E6E291","#CA7E77"))+
   #wrap text for x axis ticks using stringr package
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10))+
-  annotate("text", x=0.6, y=500, label = "B.", size=20)
+  annotate("text", x=0.6, y=500, label = "B.", size=20)+
+  annotate("text", x=1, y=480, label = "a", size=20)+
+  annotate("text", x=2, y=480, label = "a", size=20)+
+  annotate("text", x=3, y=480, label = "ab", size=20)+
+  annotate("text", x=4, y=480, label = "b", size=20)
 
 #Create Figure
 Peroxidase_Ratio_Graph +
