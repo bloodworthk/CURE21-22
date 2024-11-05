@@ -321,131 +321,6 @@ Abiotics<-AbioticSubsetTemp %>%
   left_join(AbioticSubsetSM) %>% 
   mutate(treatment=ifelse(overall_group=="Control-Control","Control",ifelse(overall_group=="Heatwave-Control","Early-HW",ifelse(overall_group=="Control-Heatwave","Late-HW",ifelse(overall_group=="Heatwave-Heatwave","Two-HWs",overall_group))))) 
 
-#### Soil Moisture Stats ####
-
-#transform data
-Through_Time_Join<-Through_Time_Join %>%
-  mutate(soil_moisture_TF=log(soil_moisture)) %>% 
-  mutate(soil_moisture_TF2=sqrt(soil_moisture)) 
-
-# check for normality SM#
-#Week 1
-Normality_test_SM_1 <- lm(data = subset(Through_Time_Join,week_num=="1"), soil_moisture_TF  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_1) 
-ols_test_normality(Normality_test_SM_1) #normal
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="1"), soil_moisture_TF  ~ overall_group) 
-
-#run model 
-SM_1 <- aov(data = subset(Through_Time_Join,week_num=="1"), soil_moisture_TF  ~ overall_group)
-summary(SM_1) #NS
-
-
-#Week 2
-Normality_test_SM_2 <- lm(data = subset(Through_Time_Join,week_num=="2"), soil_moisture_TF  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_2) 
-ols_test_normality(Normality_test_SM_2) #normal
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="2"), soil_moisture_TF  ~ overall_group) #not met
-
-#run model 
-SM_2 <- aov(data = subset(Through_Time_Join,week_num=="2"), soil_moisture_TF  ~ overall_group)
-summary(SM_2) #significant
-
-#Week 3
-Normality_test_SM_3 <- lm(data = subset(Through_Time_Join,week_num=="3"), soil_moisture  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_3) 
-ols_test_normality(Normality_test_SM_3) #normal
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="3"), soil_moisture  ~ overall_group) #not met
-
-#run model 
-SM_3 <- aov(data = subset(Through_Time_Join,week_num=="3"), soil_moisture  ~ overall_group)
-summary(SM_3) #significant
-
-#Week 4
-Normality_test_SM_4 <- lm(data = subset(Through_Time_Join,week_num=="4"), soil_moisture  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_4) 
-ols_test_normality(Normality_test_SM_4) #normal
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="4"), soil_moisture  ~ overall_group)  #not met
-
-#run model 
-SM_4 <- aov(data = subset(Through_Time_Join,week_num=="4"), soil_moisture  ~ overall_group)
-summary(SM_4) #significant
-
-#Week 5
-Normality_test_SM_5 <- lm(data = subset(Through_Time_Join,week_num=="5"), soil_moisture_TF  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_5) 
-ols_test_normality(Normality_test_SM_5) #normal
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="5"), soil_moisture_TF  ~ overall_group) #not met
-#run model 
-SM_5 <- aov(data = subset(Through_Time_Join,week_num=="5"), soil_moisture_TF  ~ overall_group)
-summary(SM_5) #significant
-
-#Week 9
-Normality_test_SM_9 <- lm(data = subset(Through_Time_Join,week_num=="9"), soil_moisture_TF2  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_9) 
-ols_test_normality(Normality_test_SM_9) #normal
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="9"), soil_moisture_TF2~ overall_group) #not met
-#run model 
-SM_9 <- aov(data = subset(Through_Time_Join,week_num=="9"), soil_moisture_TF2  ~ overall_group)
-summary(SM_9) #significant
-
-#Week 18
-Normality_test_SM_18 <- lm(data = subset(Through_Time_Join,week_num=="18"), soil_moisture_TF2 ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_18) 
-ols_test_normality(Normality_test_SM_18) #normalish
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="18"), soil_moisture_TF2  ~ overall_group) #NS
-
-#run model 
-SM_18 <- aov(data = subset(Through_Time_Join,week_num=="18"), soil_moisture_TF2  ~ overall_group)
-summary(SM_18) #significant
-
-#Week 19
-Normality_test_SM_19 <- lm(data = subset(Through_Time_Join,week_num=="19"), soil_moisture_TF2  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_19) 
-ols_test_normality(Normality_test_SM_19) #normalish
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="19"), soil_moisture_TF2  ~ overall_group) #NS
-#run model 
-SM_19 <- aov(data = subset(Through_Time_Join,week_num=="19"), soil_moisture_TF2  ~ overall_group)
-summary(SM_19) #significant
-
-#Week 20
-Normality_test_SM_20 <- lm(data = subset(Through_Time_Join,week_num=="20"), soil_moisture_TF2  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_20) 
-ols_test_normality(Normality_test_SM_20) #normalish
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="20"), soil_moisture_TF2  ~ overall_group)  #NS
-#run model 
-SM_20 <- aov(data = subset(Through_Time_Join,week_num=="20"), soil_moisture_TF2  ~ overall_group)
-summary(SM_20) #significant
-
-#Week 21
-Normality_test_SM_21 <- lm(data = subset(Through_Time_Join,week_num=="21"), soil_moisture_TF2  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_21) 
-ols_test_normality(Normality_test_SM_21) #normalish
-#check for homoscedascity
-leveneTest(data = subset(Through_Time_Join,week_num=="21"), soil_moisture_TF2  ~ overall_group)  #not met
-#run model 
-SM_21 <- aov(data = subset(Through_Time_Join,week_num=="21"), soil_moisture_TF2  ~ overall_group)
-summary(SM_21) #significant
-
-#Week 22
-Normality_test_SM_22 <- lm(data = subset(Through_Time_Join,week_num=="22"), soil_moisture_TF2  ~ overall_group)
-ols_plot_resid_hist(Normality_test_SM_22) 
-ols_test_normality(Normality_test_SM_22) #normalish
-#check for homoscedascity 
-leveneTest(data = subset(Through_Time_Join,week_num=="22"), soil_moisture_TF2  ~ overall_group) #NS
-#run model 
-SM_22 <- aov(data = subset(Through_Time_Join,week_num=="22"), soil_moisture_TF2  ~ overall_group)
-summary(SM_22) #significant
-
-
 
 #### Figure 1: Abiotics ####
 
@@ -495,16 +370,7 @@ SMGraph <-ggplot(Abiotics,aes(x=week_num, y=SM_Mean,group=treatment,color=treatm
   xlab("Week Number")+
   ylab("Soil Moisture (%)")+
   #add in rectangle around heatwave
-  annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")+
-  annotate("text", x="2", y=15, label = "*", size=20)+
-  annotate("text", x="3", y=15, label = "*", size=20)+
-  annotate("text", x="4", y=15, label = "*", size=20)+
-  annotate("text", x="5", y=15, label = "*", size=20)+
-  annotate("text", x="9", y=15, label = "*", size=20)+
-  annotate("text", x="18", y=15, label = "*", size=20)+
-  annotate("text", x="19", y=15, label = "*", size=20)+
-  annotate("text", x="20", y=15, label = "*", size=20)+
-  annotate("text", x="22", y=15, label = "*", size=20)
+  annotate('rect', xmin = c("3","19"), xmax = c("4","20"),ymin=-Inf, ymax=Inf, alpha=0.2, fill="grey")
 
 #### Create Figure 1 #### 
 
@@ -512,6 +378,7 @@ TempGraph+
   HumidityGraph+
   SMGraph+
   plot_layout(ncol = 1,nrow = 3)#save at 3000 x 4000
+
 
 #### End Time Point Stats ####
 
