@@ -374,10 +374,12 @@ SMGraph <-ggplot(Abiotics,aes(x=week_num, y=SM_Mean,group=treatment,color=treatm
 
 #### Create Figure 1 #### 
 
-TempGraph+
+Figure1<-TempGraph+
   HumidityGraph+
   SMGraph+
   plot_layout(ncol = 1,nrow = 3)#save at 3000 x 4000
+
+ggsave("/Users/kjbloodw/Library/CloudStorage/Box-Box/Manuscripts/2021-2022_CURE_Manuscript/Ecosphere Submission/Revisions/Figures for Publication/Figure1.tiff", plot = Figure1, dpi = 300,width=30,height=40)
 #### Figure 2: Restoration Stats ####
 
 #### Fuel Load Stats ####
@@ -442,10 +444,12 @@ Fuel_Load_Graph<-ggplot(NPP_Join, aes(x = treatment, y = total_ANPP_g, fill= tre
 
 
 #Create Figure
-Survival_Graph +
+Figure2<-Survival_Graph +
   Fuel_Load_Graph +
   plot_layout(ncol = 1,nrow = 2)
 #save at 1500 x 3000
+
+ggsave("/Users/kjbloodw/Library/CloudStorage/Box-Box/Manuscripts/2021-2022_CURE_Manuscript/Ecosphere Submission/Revisions/Figures for Publication/Figure2.tiff", plot = Figure2, dpi = 300,width=15,height=30)
 
 #### End Time Point Stats ####
 
@@ -684,7 +688,7 @@ ANPP_BNPP_Graph <- ggplot(NPP_Join_Alive, aes(x = treatment, y = ANPP_BNPP_ratio
   annotate("text", x=0.6, y=2.5, label = "(f)", size=20)
 
 #### Create 6 paneled Figure 3 ####
-MaxLL_Graph+
+Figure3<-MaxLL_Graph+
   Leaf_Num_Graph+
   MaxLL_GR_Graph+
   ANPP_Graph+
@@ -693,6 +697,8 @@ MaxLL_Graph+
   plot_layout(ncol = 3,nrow = 2)
 #save at 3500 x 2250
 
+
+ggsave("/Users/kjbloodw/Library/CloudStorage/Box-Box/Manuscripts/2021-2022_CURE_Manuscript/Ecosphere Submission/Revisions/Figures for Publication/Figure3.tiff", plot = Figure3, dpi = 300,width=40,height=23)
 #### Trait Stats ####
 
 #### SLA Stats  ####
@@ -821,11 +827,13 @@ LeafThickness_Graph <- ggplot(Leaf_Data_Join, aes(x = treatment, y = leaf_thickn
   annotate("text", x=4, y=0.42, label = "a", size=20)
 
 #### Create Figure 4 ####
-SLA_Graph+
+Figure4<-SLA_Graph+
   LDMC_Graph+
   LeafThickness_Graph+
   plot_layout(ncol = 1,nrow = 3)
 #save at 2000 x 3000
+
+ggsave("/Users/kjbloodw/Library/CloudStorage/Box-Box/Manuscripts/2021-2022_CURE_Manuscript/Ecosphere Submission/Revisions/Figures for Publication/Figure4.tiff", plot = Figure4, dpi = 300,width=20,height=30)
 
 #### Enzyme Data Manipulation ####
 Enzyme_Ratios <- Enzyme_Data %>% 
@@ -909,8 +917,9 @@ Catalase_Ratio_Graph<-ggplot(Enzyme_Ratios, aes(x = Treatment, y = Catalase_Perc
   annotate("text", x=4, y=480, label = "b", size=20)
 
 #Create Figure
-Peroxidase_Ratio_Graph +
+Figure5<-Peroxidase_Ratio_Graph +
   Catalase_Ratio_Graph +
   plot_layout(ncol = 1,nrow = 2)
 #save at 1500 x 2000
 
+ggsave("/Users/kjbloodw/Library/CloudStorage/Box-Box/Manuscripts/2021-2022_CURE_Manuscript/Ecosphere Submission/Revisions/Figures for Publication/Figure5.tiff", plot = Figure5, dpi = 300,width=18,height=20)
